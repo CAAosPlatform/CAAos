@@ -1,0 +1,692 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>patientData &#8212; CAAos Platform 0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CAAos Platform 0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for patientData</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/bin/python</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">.. warning:: Include here brief description of this module</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">signal</span> <span class="k">as</span> <span class="n">scipySignal</span>
+<span class="kn">import</span> <span class="nn">tools</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span>
+<span class="kn">import</span> <span class="nn">xml.etree.ElementTree</span> <span class="k">as</span> <span class="nn">ET</span>
+<span class="kn">import</span> <span class="nn">xml.dom.minidom</span> <span class="k">as</span> <span class="nn">MD</span>
+<span class="kn">from</span> <span class="nn">signals</span> <span class="k">import</span> <span class="n">signal</span><span class="p">,</span> <span class="n">beat2beat</span>
+<span class="kn">from</span> <span class="nn">PSDestimator</span> <span class="k">import</span> <span class="n">PSDestimator</span>
+<span class="kn">from</span> <span class="nn">TFA</span> <span class="k">import</span> <span class="n">transferFunctionAnalysis</span>
+
+<span class="n">__version__</span> <span class="o">=</span> <span class="s1">&#39;0.1&#39;</span>
+
+<div class="viewcode-block" id="patientData"><a class="viewcode-back" href="../index.html#patientData.patientData">[docs]</a><span class="k">class</span> <span class="nc">patientData</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Patient data base class</span>
+
+<span class="sd">    This is the base class to process cerebral autoregulation data.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    inputFile : str</span>
+<span class="sd">        File with patient&#39;s data. Accepted files: **.exp**, **.dat** (Raw Data file) or **.ppo** (preprocessing operation file)</span>
+<span class="sd">        </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="patientData.getVersion"><a class="viewcode-back" href="../index.html#patientData.patientData.getVersion">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">getVersion</span><span class="p">():</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the version of the module</span>
+<span class="sd">        </span>
+<span class="sd">        **Example**</span>
+
+<span class="sd">        &gt;&gt;&gt; import patientData</span>
+<span class="sd">        &gt;&gt;&gt; </span>
+<span class="sd">        &gt;&gt;&gt; patientData.patientData.getVersion()</span>
+<span class="sd">        &#39;0.1&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">__version__</span></div>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">inputFile</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialization routine.</span>
+<span class="sd">        </span>
+<span class="sd">        **Example**</span>
+
+<span class="sd">        &gt;&gt;&gt; import patientData</span>
+<span class="sd">        &gt;&gt;&gt; </span>
+<span class="sd">        &gt;&gt;&gt; patientData.patientData.getVersion()</span>
+<span class="sd">        &#39;0.1&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">dirName</span><span class="p">,</span><span class="n">baseName</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">inputFile</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filePrefix</span><span class="p">,</span><span class="n">fileExtension</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">baseName</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hasRRmarks</span><span class="o">=</span><span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hasB2Bdata</span><span class="o">=</span><span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hasLdata</span><span class="o">=</span><span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hasRdata</span><span class="o">=</span><span class="kc">False</span>
+        
+        <span class="k">if</span> <span class="n">fileExtension</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;.ppo&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">operationsFile</span> <span class="o">=</span> <span class="n">inputFile</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">loadOperations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">operationsFile</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fileName</span><span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dirName</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">operationsXML</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;file&#39;</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">loadData</span><span class="p">()</span>
+            
+            <span class="bp">self</span><span class="o">.</span><span class="n">processOperations</span><span class="p">()</span>
+            
+        <span class="k">if</span> <span class="n">fileExtension</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;.exp&#39;</span><span class="p">,</span><span class="s1">&#39;.dat&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fileName</span><span class="o">=</span><span class="n">inputFile</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">operationsFile</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dirName</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">filePrefix</span> <span class="o">+</span> <span class="s1">&#39;.ppo&#39;</span><span class="p">)</span>
+
+            <span class="c1">#create operationsTree</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">operationsXML</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="s2">&quot;patient&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">operationsXML</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;file&#39;</span><span class="p">,</span><span class="n">baseName</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">operationsXML</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;version&#39;</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">getVersion</span><span class="p">())</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">loadData</span><span class="p">()</span>
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">historySignals</span><span class="o">=</span><span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">historyOperations</span><span class="o">=</span><span class="p">[]</span>
+        
+<div class="viewcode-block" id="patientData.storeState"><a class="viewcode-back" href="../index.html#patientData.patientData.storeState">[docs]</a>    <span class="k">def</span> <span class="nf">storeState</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">historySignals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">historyOperations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">operationsXML</span><span class="p">))</span></div>
+    
+<div class="viewcode-block" id="patientData.undoState"><a class="viewcode-back" href="../index.html#patientData.patientData.undoState">[docs]</a>    <span class="k">def</span> <span class="nf">undoState</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">historyOperations</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">historySignals</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">operationsXML</span><span class="o">=</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">historyOperations</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="o">=</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">historySignals</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span></div>
+        
+<div class="viewcode-block" id="patientData.loadHeader"><a class="viewcode-back" href="../index.html#patientData.patientData.loadHeader">[docs]</a>    <span class="k">def</span> <span class="nf">loadHeader</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fileName</span><span class="p">,</span><span class="s1">&#39;r&#39;</span><span class="p">)</span>
+        <span class="n">line</span><span class="o">=</span><span class="s1">&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sizeHeader</span><span class="o">=</span><span class="mi">0</span>
+        
+        <span class="c1">#extract examination date</span>
+        <span class="k">while</span> <span class="ow">not</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;Examination&#39;</span><span class="p">):</span>
+          <span class="n">line</span><span class="o">=</span><span class="n">file</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+          <span class="bp">self</span><span class="o">.</span><span class="n">sizeHeader</span><span class="o">+=</span><span class="mi">1</span>
+
+        <span class="n">date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">12</span><span class="p">:]</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">&#39;</span><span class="si">%d</span><span class="s1">:%m:%Y&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">date</span><span class="p">()</span>
+        <span class="n">time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">12</span><span class="p">:]</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;%H:%M:%S&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">examDate</span><span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">combine</span><span class="p">(</span><span class="n">date</span><span class="p">,</span><span class="n">time</span><span class="p">)</span>
+        
+        <span class="c1">#extract sampling frequency in Hz</span>
+        <span class="k">while</span> <span class="ow">not</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;Sampling Rate&#39;</span><span class="p">):</span>
+          <span class="n">line</span><span class="o">=</span><span class="n">file</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+          <span class="bp">self</span><span class="o">.</span><span class="n">sizeHeader</span><span class="o">+=</span><span class="mi">1</span>
+          
+        <span class="bp">self</span><span class="o">.</span><span class="n">samplingRate_Hz</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;Hz&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">))</span>
+        
+        <span class="c1">#next 2 lines should contain labels and units</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">signalLabels</span><span class="o">=</span><span class="n">file</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span><span class="s1">&#39;_&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">signalUnits</span><span class="o">=</span><span class="n">file</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">nChannels</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">signalUnits</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sizeHeader</span><span class="o">+=</span><span class="mi">2</span>
+        
+        <span class="n">file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">operationsXML</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;sizeHeader&#39;</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sizeHeader</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">operationsXML</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;examDate&#39;</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">examDate</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">operationsXML</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;nChannels&#39;</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nChannels</span><span class="p">))</span></div>
+        
+<div class="viewcode-block" id="patientData.loadData"><a class="viewcode-back" href="../index.html#patientData.patientData.loadData">[docs]</a>    <span class="k">def</span> <span class="nf">loadData</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">loadHeader</span><span class="p">()</span>
+        <span class="c1">#create dtype of the file</span>
+        <span class="n">dtypes</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;U11&quot;</span><span class="p">,</span><span class="s1">&#39;i4&#39;</span><span class="p">)</span>   <span class="c1"># col 0: time (11 char string)   col 1: frame (32 bit int)</span>
+        <span class="n">dtypes</span><span class="o">=</span><span class="n">dtypes</span> <span class="o">+</span> <span class="p">(</span><span class="s1">&#39;f8&#39;</span><span class="p">,)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">nChannels</span>  <span class="c1"># the other columns will be treated as float (8bits)</span>
+        
+        <span class="n">rawData</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">genfromtxt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fileName</span><span class="p">,</span><span class="n">delimiter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">skip_header</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sizeHeader</span><span class="p">,</span><span class="n">autostrip</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">names</span><span class="o">=</span><span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">signalLabels</span><span class="p">),</span><span class="n">dtype</span><span class="o">=</span><span class="n">dtypes</span><span class="p">)</span>
+      
+        <span class="bp">self</span><span class="o">.</span><span class="n">nPoints</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">rawData</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="o">=</span><span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nChannels</span><span class="p">):</span>
+            <span class="n">label</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">signalLabels</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">2</span><span class="p">]</span>
+            <span class="n">newSignal</span><span class="o">=</span><span class="n">signal</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">i</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span><span class="n">unit</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">signalUnits</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">2</span><span class="p">],</span><span class="n">data</span><span class="o">=</span><span class="n">rawData</span><span class="p">[</span><span class="n">label</span><span class="p">],</span><span class="n">samplingRate_Hz</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">samplingRate_Hz</span><span class="p">,</span><span class="n">operationsXML</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">operationsXML</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">newSignal</span> <span class="p">)</span>
+      
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">signalLabels</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">signalUnits</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">samplingRate_Hz</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">nPoints</span></div>
+        
+    <span class="c1">#channelList: list or None.  List with the channels to save. </span>
+<div class="viewcode-block" id="patientData.saveSignals"><a class="viewcode-back" href="../index.html#patientData.patientData.saveSignals">[docs]</a>    <span class="k">def</span> <span class="nf">saveSignals</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fileName</span><span class="p">,</span><span class="n">channelList</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Saving .SIG data&#39;</span><span class="p">)</span>
+        <span class="n">fileObj</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="n">fileName</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">channelList</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">channelList</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">saveData</span><span class="p">(</span><span class="n">fileObj</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nChannels</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">saveData</span><span class="p">(</span><span class="n">fileObj</span><span class="p">)</span>
+        <span class="n">fileObj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Ok!&#39;</span><span class="p">)</span></div>
+        
+    <span class="c1">#channelList: list or None.  List with the channels to save. </span>
+<div class="viewcode-block" id="patientData.saveBeat2beat"><a class="viewcode-back" href="../index.html#patientData.patientData.saveBeat2beat">[docs]</a>    <span class="k">def</span> <span class="nf">saveBeat2beat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fileName</span><span class="p">,</span><span class="n">channelList</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Saving .B2B data&#39;</span><span class="p">)</span>
+        <span class="n">fileObj</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="n">fileName</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">channelList</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">channelList</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">saveB2B</span><span class="p">(</span><span class="n">fileObj</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nChannels</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">saveB2B</span><span class="p">(</span><span class="n">fileObj</span><span class="p">)</span>
+        <span class="n">fileObj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Ok!&#39;</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="patientData.saveOperations"><a class="viewcode-back" href="../index.html#patientData.patientData.saveOperations">[docs]</a>    <span class="k">def</span> <span class="nf">saveOperations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">fileName</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Saving .PPO data&#39;</span><span class="p">)</span>
+
+        <span class="n">rough_string</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">tostring</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">operationsXML</span><span class="p">,</span> <span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">MD</span><span class="o">.</span><span class="n">parseString</span><span class="p">(</span><span class="n">rough_string</span><span class="p">)</span><span class="o">.</span><span class="n">toprettyxml</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="s2">&quot;    &quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">fileName</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fileOut</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="n">fileName</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">fileOut</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">operationsFile</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span>
+            
+        <span class="n">fileOut</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">fileOut</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Ok!&#39;</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="patientData.loadOperations"><a class="viewcode-back" href="../index.html#patientData.patientData.loadOperations">[docs]</a>    <span class="k">def</span> <span class="nf">loadOperations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">fileName</span><span class="p">):</span>
+        <span class="n">tree</span><span class="o">=</span><span class="n">ET</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">fileName</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">operationsXML</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">getroot</span><span class="p">()</span>
+        <span class="c1">#print(&#39;\nAll attributes:&#39;)</span>
+        <span class="c1">#for elem in self.operationsXML:</span>
+            <span class="c1">#for subelem in elem:</span>
+                <span class="c1">##print(subelem.attrib)</span>
+                <span class="c1">#print(subelem.text)</span>
+        <span class="k">return</span></div>
+
+<div class="viewcode-block" id="patientData.processOperations"><a class="viewcode-back" href="../index.html#patientData.patientData.processOperations">[docs]</a>    <span class="k">def</span> <span class="nf">processOperations</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">operation</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">operationsXML</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">operation</span><span class="o">.</span><span class="n">tag</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;resample&#39;</span><span class="p">,</span><span class="s1">&#39;setlabel&#39;</span><span class="p">,</span> <span class="s1">&#39;syncronize&#39;</span><span class="p">,</span> <span class="s1">&#39;findRRmarks&#39;</span><span class="p">,</span> <span class="s1">&#39;beat2beat&#39;</span><span class="p">,</span> <span class="s1">&#39;setType&#39;</span><span class="p">,</span> <span class="s1">&#39;calibrate&#39;</span><span class="p">,</span> <span class="s1">&#39;LPfilter&#39;</span><span class="p">,</span> <span class="s1">&#39;interpolate&#39;</span><span class="p">,</span> <span class="s1">&#39;cropInterval&#39;</span><span class="p">,</span> <span class="s1">&#39;insertPeak&#39;</span><span class="p">,</span> <span class="s1">&#39;removePeak&#39;</span><span class="p">,</span> <span class="s1">&#39;B2B_LPfilter&#39;</span><span class="p">]:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Operation </span><span class="se">\&#39;</span><span class="si">%s</span><span class="se">\&#39;</span><span class="s1"> not recognized. Exiting&#39;</span> <span class="o">%</span> <span class="n">operation</span><span class="o">.</span><span class="n">tag</span><span class="p">)</span>
+                <span class="n">exit</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">operation</span><span class="o">.</span><span class="n">tag</span> <span class="o">==</span> <span class="s1">&#39;setType&#39;</span><span class="p">:</span>
+                <span class="n">typeSignal</span><span class="o">=</span> <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;type&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;str&#39;</span><span class="p">)</span>
+                <span class="n">channel</span><span class="o">=</span>    <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;channel&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Setting Type channel=</span><span class="si">%d</span><span class="s1">: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span><span class="n">typeSignal</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">typeSignal</span><span class="o">==</span><span class="s1">&#39;None&#39;</span><span class="p">:</span>
+                    <span class="n">typeSignal</span><span class="o">=</span><span class="kc">None</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">channel</span><span class="p">]</span><span class="o">.</span><span class="n">setType</span><span class="p">(</span><span class="n">typeSignal</span><span class="p">,</span><span class="n">register</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">operation</span><span class="o">.</span><span class="n">tag</span> <span class="o">==</span> <span class="s1">&#39;setlabel&#39;</span><span class="p">:</span>
+                <span class="n">label</span><span class="o">=</span>      <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;label&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;str&#39;</span><span class="p">)</span>
+                <span class="n">channel</span><span class="o">=</span>    <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;channel&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Setting Label channel=</span><span class="si">%d</span><span class="s1">: </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span><span class="n">label</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">channel</span><span class="p">]</span><span class="o">.</span><span class="n">setLabel</span><span class="p">(</span><span class="n">label</span><span class="p">,</span><span class="n">register</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">operation</span><span class="o">.</span><span class="n">tag</span> <span class="o">==</span> <span class="s1">&#39;resample&#39;</span><span class="p">:</span>
+                <span class="n">sampleRate</span><span class="o">=</span> <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;sampleRate&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;float&#39;</span><span class="p">)</span>
+                <span class="n">method</span><span class="o">=</span>     <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;method&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;str&#39;</span><span class="p">)</span>
+                <span class="n">channel</span><span class="o">=</span>    <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;channel&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Resampling channel=</span><span class="si">%d</span><span class="s1">: Fs= </span><span class="si">%f</span><span class="s1">, method=</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span><span class="n">sampleRate</span><span class="p">,</span><span class="n">method</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">channel</span><span class="p">]</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">sampleRate</span><span class="p">,</span><span class="n">method</span><span class="p">,</span><span class="n">register</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">operation</span><span class="o">.</span><span class="n">tag</span> <span class="o">==</span> <span class="s1">&#39;calibrate&#39;</span><span class="p">:</span>
+                <span class="n">valMin</span><span class="o">=</span>     <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;valMin&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;float&#39;</span><span class="p">)</span>
+                <span class="n">valMax</span><span class="o">=</span>     <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;valMax&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;float&#39;</span><span class="p">)</span>
+                <span class="n">method</span><span class="o">=</span>     <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;method&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;str&#39;</span><span class="p">)</span>
+                <span class="n">segmentIdx</span><span class="o">=</span> <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;segmentIndexes&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;list_int&#39;</span><span class="p">)</span>
+                <span class="n">channel</span><span class="o">=</span>    <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;channel&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Calibrating channel= </span><span class="si">%d</span><span class="s1">: method= </span><span class="si">%s</span><span class="s1">, valMin=</span><span class="si">%f</span><span class="s1">, valMax=</span><span class="si">%f</span><span class="s1">&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span><span class="n">method</span><span class="p">,</span><span class="n">valMin</span><span class="p">,</span><span class="n">valMax</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">channel</span><span class="p">]</span><span class="o">.</span><span class="n">calibrate</span><span class="p">(</span><span class="n">valMax</span><span class="p">,</span><span class="n">valMin</span><span class="p">,</span><span class="n">method</span><span class="p">,</span><span class="n">segmentIdx</span><span class="p">,</span><span class="n">register</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">operation</span><span class="o">.</span><span class="n">tag</span> <span class="o">==</span> <span class="s1">&#39;syncronize&#39;</span><span class="p">:</span>
+                <span class="n">channelList</span><span class="o">=</span> <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;channels&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;list_int&#39;</span><span class="p">)</span>
+                <span class="n">method</span><span class="o">=</span>     <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;method&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;str&#39;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Syncronizing Channels </span><span class="si">%s</span><span class="s1">: method=</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">channelList</span><span class="p">),</span> <span class="n">method</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">synchronizeSignals</span><span class="p">(</span><span class="n">channelList</span><span class="p">,</span><span class="n">method</span><span class="p">,</span><span class="n">register</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">operation</span><span class="o">.</span><span class="n">tag</span> <span class="o">==</span> <span class="s1">&#39;LPfilter&#39;</span><span class="p">:</span>
+                <span class="n">Ntaps</span><span class="o">=</span>      <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;Ntaps&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+                <span class="n">method</span><span class="o">=</span>     <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;method&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;str&#39;</span><span class="p">)</span>
+                <span class="n">channel</span><span class="o">=</span>    <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;channel&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Low Pass filter channel=</span><span class="si">%d</span><span class="s1">: method=</span><span class="si">%s</span><span class="s1">, Ntaps=</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span><span class="n">method</span><span class="p">,</span><span class="n">Ntaps</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">channel</span><span class="p">]</span><span class="o">.</span><span class="n">LPfilter</span><span class="p">(</span><span class="n">method</span><span class="p">,</span><span class="n">Ntaps</span><span class="p">,</span><span class="n">register</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">operation</span><span class="o">.</span><span class="n">tag</span> <span class="o">==</span> <span class="s1">&#39;interpolate&#39;</span><span class="p">:</span>
+                <span class="n">frameStart</span><span class="o">=</span>     <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;frameStart&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+                <span class="n">frameEnd</span><span class="o">=</span>       <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;frameEnd&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+                <span class="n">method</span><span class="o">=</span>     <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;method&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;str&#39;</span><span class="p">)</span>
+                <span class="n">channel</span><span class="o">=</span>    <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;channel&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Interpolating channel=</span><span class="si">%d</span><span class="s1">: start=</span><span class="si">%d</span><span class="s1">, end=</span><span class="si">%d</span><span class="s1">, method=</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span><span class="n">frameStart</span><span class="p">,</span><span class="n">frameEnd</span><span class="p">,</span><span class="n">method</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">channel</span><span class="p">]</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span><span class="n">frameStart</span><span class="p">,</span><span class="n">frameEnd</span><span class="p">,</span><span class="n">method</span><span class="p">,</span><span class="n">register</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                
+                
+            <span class="k">if</span> <span class="n">operation</span><span class="o">.</span><span class="n">tag</span> <span class="o">==</span> <span class="s1">&#39;cropInterval&#39;</span><span class="p">:</span>
+                <span class="n">frameStart</span><span class="o">=</span>     <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;frameStart&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+                <span class="n">frameEnd</span><span class="o">=</span>       <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;frameEnd&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+                <span class="n">RemoveSegment</span><span class="o">=</span>  <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;RemoveSegment&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">)</span>
+                <span class="n">segmentIndexes</span><span class="o">=</span> <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;segmentIndexes&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;list_int&#39;</span><span class="p">)</span>
+                <span class="n">channel</span><span class="o">=</span>        <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;channel&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Cropping channel </span><span class="si">%s</span><span class="s1">: start=</span><span class="si">%d</span><span class="s1">, end=</span><span class="si">%d</span><span class="s1">, removeSegment=</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">frameStart</span><span class="p">,</span><span class="n">frameEnd</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">RemoveSegment</span><span class="p">)))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">channel</span><span class="p">]</span><span class="o">.</span><span class="n">cropInterval</span><span class="p">(</span><span class="n">frameStart</span><span class="p">,</span><span class="n">frameEnd</span><span class="p">,</span><span class="kc">False</span><span class="p">,</span><span class="n">RemoveSegment</span><span class="p">,</span><span class="n">segmentIndexes</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">operation</span><span class="o">.</span><span class="n">tag</span> <span class="o">==</span> <span class="s1">&#39;findRRmarks&#39;</span><span class="p">:</span>
+                <span class="n">refChannel</span><span class="o">=</span>  <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;refChannel&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+                <span class="n">method</span><span class="o">=</span>      <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;method&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;str&#39;</span><span class="p">)</span>
+                <span class="n">findPeaks</span><span class="o">=</span>   <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;findPeaks&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">)</span>
+                <span class="n">findValleys</span><span class="o">=</span> <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;findValleys&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Finding RRmarks: refChannel=</span><span class="si">%d</span><span class="s1"> method=</span><span class="si">%s</span><span class="s1"> findPeaks=</span><span class="si">%s</span><span class="s1"> findValleys=</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">refChannel</span><span class="p">,</span><span class="n">method</span><span class="p">,</span><span class="n">findPeaks</span><span class="p">,</span><span class="n">findValleys</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">findRRmarks</span><span class="p">(</span><span class="n">refChannel</span><span class="p">,</span><span class="n">method</span><span class="p">,</span><span class="n">findPeaks</span><span class="p">,</span><span class="n">findValleys</span><span class="p">,</span><span class="n">register</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">operation</span><span class="o">.</span><span class="n">tag</span> <span class="o">==</span> <span class="s1">&#39;insertPeak&#39;</span><span class="p">:</span>
+                <span class="n">newIdx</span><span class="o">=</span>   <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;newIdx&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+                <span class="n">isPeak</span><span class="o">=</span>   <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;isPeak&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Inserting Peak: newIdx=</span><span class="si">%d</span><span class="s1">, isPeak=</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">newIdx</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">isPeak</span><span class="p">)))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">insertPeak</span><span class="p">(</span><span class="n">newIdx</span><span class="p">,</span><span class="n">isPeak</span><span class="p">,</span><span class="n">register</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">operation</span><span class="o">.</span><span class="n">tag</span> <span class="o">==</span> <span class="s1">&#39;removePeak&#39;</span><span class="p">:</span>
+                <span class="n">Idx</span><span class="o">=</span>      <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;Idx&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+                <span class="n">isPeak</span><span class="o">=</span>   <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;isPeak&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Removing Peak: Idx=</span><span class="si">%d</span><span class="s1">, isPeak=</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">Idx</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">isPeak</span><span class="p">)))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">removePeak</span><span class="p">(</span><span class="n">Idx</span><span class="p">,</span><span class="n">isPeak</span><span class="p">,</span><span class="n">register</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">operation</span><span class="o">.</span><span class="n">tag</span> <span class="o">==</span> <span class="s1">&#39;beat2beat&#39;</span><span class="p">:</span>
+                <span class="n">resampleMethod</span><span class="o">=</span>   <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;resampleMethod&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;str&#39;</span><span class="p">)</span>
+                <span class="n">resampleRate_Hz</span><span class="o">=</span>  <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;resampleRate_Hz&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;float&#39;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Extracting beat-to-beat data: resampleMethod=</span><span class="si">%s</span><span class="s1">, Freq=</span><span class="si">%f</span><span class="s1">&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">resampleMethod</span><span class="p">,</span> <span class="n">resampleRate_Hz</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">getBeat2beat</span><span class="p">(</span><span class="n">resampleRate_Hz</span><span class="p">,</span><span class="n">resampleMethod</span><span class="p">,</span><span class="n">register</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">operation</span><span class="o">.</span><span class="n">tag</span> <span class="o">==</span> <span class="s1">&#39;B2B_LPfilter&#39;</span><span class="p">:</span>
+                <span class="n">method</span><span class="o">=</span>     <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;method&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;str&#39;</span><span class="p">)</span>
+                <span class="n">Ntaps</span><span class="o">=</span>      <span class="n">tools</span><span class="o">.</span><span class="n">convAtrib</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span><span class="s1">&#39;Ntaps&#39;</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;B2B LP filter: method=</span><span class="si">%s</span><span class="s1">, Ntaps=</span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">method</span><span class="p">,</span><span class="n">Ntaps</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">LPfilterBeat2beat</span><span class="p">(</span><span class="n">method</span><span class="p">,</span><span class="n">Ntaps</span><span class="p">,</span><span class="n">register</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+                
+<div class="viewcode-block" id="patientData.registerOperation"><a class="viewcode-back" href="../index.html#patientData.patientData.registerOperation">[docs]</a>    <span class="k">def</span> <span class="nf">registerOperation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">xmlElement</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">operationsXML</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">xmlElement</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="patientData.findChannelByLabel"><a class="viewcode-back" href="../index.html#patientData.patientData.findChannelByLabel">[docs]</a>    <span class="k">def</span> <span class="nf">findChannelByLabel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">label</span><span class="p">):</span>
+        <span class="k">return</span>  <span class="bp">self</span><span class="o">.</span><span class="n">listLabels</span><span class="p">()</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">label</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="patientData.listLabels"><a class="viewcode-back" href="../index.html#patientData.patientData.listLabels">[docs]</a>    <span class="k">def</span> <span class="nf">listLabels</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">label</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">]</span></div>
+        
+<div class="viewcode-block" id="patientData.findDelay"><a class="viewcode-back" href="../index.html#patientData.patientData.findDelay">[docs]</a>    <span class="k">def</span> <span class="nf">findDelay</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">refChannel</span><span class="p">,</span><span class="n">channel</span><span class="p">):</span>
+        <span class="c1"># from:  https://stackoverflow.com/questions/4688715/find-time-shift-between-two-similar-waveforms</span>
+        <span class="n">delaySamples</span> <span class="o">=</span>  <span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">scipySignal</span><span class="o">.</span><span class="n">correlate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">refChannel</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">channel</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">))</span><span class="o">-</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">refChannel</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="p">)</span>
+        <span class="k">return</span> <span class="n">delaySamples</span></div>
+    
+<div class="viewcode-block" id="patientData.findRRmarks"><a class="viewcode-back" href="../index.html#patientData.patientData.findRRmarks">[docs]</a>    <span class="k">def</span> <span class="nf">findRRmarks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">refChannel</span><span class="p">,</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;ampd&#39;</span><span class="p">,</span><span class="n">findPeaks</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">findValleys</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">register</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">peakIdx</span><span class="p">,</span><span class="n">_</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">valleyIdx</span><span class="p">,</span><span class="n">_</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">refChannel</span><span class="p">]</span><span class="o">.</span><span class="n">findPeaks</span><span class="p">(</span><span class="n">method</span><span class="p">,</span><span class="n">findPeaks</span><span class="p">,</span><span class="n">findValleys</span><span class="p">,</span><span class="n">register</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hasRRmarks</span><span class="o">=</span><span class="kc">True</span>
+        
+        <span class="c1">#register operation</span>
+        <span class="k">if</span> <span class="n">register</span><span class="p">:</span>
+            <span class="n">xmlElement</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="s2">&quot;findRRmarks&quot;</span><span class="p">)</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;refChannel&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">refChannel</span><span class="p">))</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;method&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="n">method</span><span class="p">)</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;findPeaks&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">findPeaks</span><span class="p">))</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;findValleys&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">findValleys</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">registerOperation</span><span class="p">(</span><span class="n">xmlElement</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="patientData.insertPeak"><a class="viewcode-back" href="../index.html#patientData.patientData.insertPeak">[docs]</a>    <span class="k">def</span> <span class="nf">insertPeak</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">newIdx</span><span class="p">,</span><span class="n">isPeak</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">register</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">hasRRmarks</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="k">if</span> <span class="n">isPeak</span><span class="p">:</span>
+            <span class="n">pos</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">peakIdx</span><span class="p">,</span><span class="n">newIdx</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">peakIdx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">peakIdx</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">newIdx</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">peakIdx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">peakIdx</span><span class="p">)</span> <span class="c1"># removes eventual repeated indexes</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pos</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">valleyIdx</span><span class="p">,</span><span class="n">newIdx</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">valleyIdx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">valleyIdx</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">newIdx</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">valleyIdx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">valleyIdx</span><span class="p">)</span> <span class="c1"># removes eventual repeated indexes</span>
+        
+        <span class="c1">#register operation</span>
+        <span class="k">if</span> <span class="n">register</span><span class="p">:</span>
+            <span class="n">xmlElement</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="s2">&quot;insertPeak&quot;</span><span class="p">)</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;newIdx&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">newIdx</span><span class="p">))</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;isPeak&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">isPeak</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">registerOperation</span><span class="p">(</span><span class="n">xmlElement</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="patientData.removePeak"><a class="viewcode-back" href="../index.html#patientData.patientData.removePeak">[docs]</a>    <span class="k">def</span> <span class="nf">removePeak</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">Idx</span><span class="p">,</span><span class="n">isPeak</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">register</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">hasRRmarks</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="k">if</span> <span class="n">isPeak</span><span class="p">:</span>
+            <span class="n">pos</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">peakIdx</span><span class="p">,</span><span class="n">Idx</span><span class="p">)</span>
+            
+            <span class="k">if</span> <span class="n">pos</span><span class="o">==</span><span class="mi">0</span> <span class="ow">or</span> <span class="p">(</span><span class="n">pos</span><span class="o">==</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">peakIdx</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">peakIdx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">peakIdx</span><span class="p">,</span> <span class="n">pos</span><span class="p">)</span>
+                <span class="k">return</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">Idx</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">peakIdx</span><span class="p">[</span><span class="n">pos</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">&lt;</span> <span class="nb">abs</span><span class="p">(</span><span class="n">Idx</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">peakIdx</span><span class="p">[</span><span class="n">pos</span><span class="p">]):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">peakIdx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">peakIdx</span><span class="p">,</span> <span class="n">pos</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">peakIdx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">peakIdx</span><span class="p">,</span> <span class="n">pos</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pos</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">peakIdx</span><span class="p">,</span><span class="n">Idx</span><span class="p">)</span>
+            
+            <span class="k">if</span> <span class="n">pos</span><span class="o">==</span><span class="mi">0</span> <span class="ow">or</span> <span class="p">(</span><span class="n">pos</span><span class="o">==</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">valleyIdx</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">valleyIdx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">valleyIdx</span><span class="p">,</span> <span class="n">pos</span><span class="p">)</span>
+                <span class="k">return</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">Idx</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">valleyIdx</span><span class="p">[</span><span class="n">pos</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">&lt;</span> <span class="nb">abs</span><span class="p">(</span><span class="n">Idx</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">valleyIdx</span><span class="p">[</span><span class="n">pos</span><span class="p">]):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">valleyIdx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">valleyIdx</span><span class="p">,</span> <span class="n">pos</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">valleyIdx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">valleyIdx</span><span class="p">,</span> <span class="n">pos</span><span class="p">)</span>
+        
+        <span class="c1">#register operation</span>
+        <span class="k">if</span> <span class="n">register</span><span class="p">:</span>
+            <span class="n">xmlElement</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="s2">&quot;removePeak&quot;</span><span class="p">)</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;Idx&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">Idx</span><span class="p">))</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;isPeak&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">isPeak</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">registerOperation</span><span class="p">(</span><span class="n">xmlElement</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="patientData.removeRRmarks"><a class="viewcode-back" href="../index.html#patientData.patientData.removeRRmarks">[docs]</a>    <span class="k">def</span> <span class="nf">removeRRmarks</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">hasRRmarks</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">peakIdx</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">valleyIdx</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">pass</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">hasRRmarks</span><span class="o">=</span><span class="kc">False</span></div>
+            
+<div class="viewcode-block" id="patientData.synchronizeSignals"><a class="viewcode-back" href="../index.html#patientData.patientData.synchronizeSignals">[docs]</a>    <span class="k">def</span> <span class="nf">synchronizeSignals</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">channelList</span><span class="p">,</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;correlation&#39;</span><span class="p">,</span><span class="n">register</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">channelList</span><span class="p">)</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">removeRRmarks</span><span class="p">()</span>
+        
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;correlation&#39;</span><span class="p">:</span>
+            <span class="c1"># delays with respect to channel 0</span>
+            <span class="n">delays</span><span class="o">=</span><span class="p">[]</span>
+            <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">channelList</span><span class="p">:</span>
+                <span class="n">delays</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">findDelay</span><span class="p">(</span><span class="n">channelList</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">ch</span><span class="p">)</span> <span class="p">)</span>
+
+            <span class="n">delays</span><span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="p">(</span><span class="n">x</span><span class="o">-</span><span class="nb">max</span><span class="p">(</span><span class="n">delays</span><span class="p">))</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">delays</span><span class="p">]</span>
+            <span class="n">length</span><span class="o">=</span><span class="p">[]</span>
+            <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">channelList</span><span class="p">)):</span>
+                <span class="n">channel</span><span class="o">=</span><span class="n">channelList</span><span class="p">[</span><span class="n">ch</span><span class="p">]</span>
+                <span class="n">delay</span><span class="o">=</span><span class="n">delays</span><span class="p">[</span><span class="n">ch</span><span class="p">]</span>
+                <span class="c1">#print(&#39;ch: %d   delay:%d&#39; %(channel,delay))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">channel</span><span class="p">]</span><span class="o">.</span><span class="n">cropFromLeft</span><span class="p">(</span><span class="n">delay</span><span class="p">,</span><span class="n">register</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="n">length</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">channel</span><span class="p">]</span><span class="o">.</span><span class="n">nPoints</span><span class="p">)</span>
+            
+            <span class="n">minLength</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="n">length</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nChannels</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">ch</span><span class="p">]</span><span class="o">.</span><span class="n">cropFromRight</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">ch</span><span class="p">]</span><span class="o">.</span><span class="n">nPoints</span><span class="o">-</span><span class="n">minLength</span><span class="p">,</span><span class="n">register</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            
+        <span class="c1">#register operation</span>
+        <span class="k">if</span> <span class="n">register</span><span class="p">:</span>
+            <span class="n">xmlElement</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="s2">&quot;syncronize&quot;</span><span class="p">)</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;channels&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">channelList</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">))</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;method&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="n">method</span><span class="p">)</span>   
+            <span class="bp">self</span><span class="o">.</span><span class="n">registerOperation</span><span class="p">(</span><span class="n">xmlElement</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="patientData.getBeat2beat"><a class="viewcode-back" href="../index.html#patientData.patientData.getBeat2beat">[docs]</a>    <span class="k">def</span> <span class="nf">getBeat2beat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">resampleRate_Hz</span><span class="o">=</span><span class="mf">100.0</span><span class="p">,</span><span class="n">resampleMethod</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span><span class="n">register</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">hasB2Bdata</span><span class="o">=</span><span class="kc">True</span>
+        <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nChannels</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">ch</span><span class="p">]</span><span class="o">.</span><span class="n">beat2beat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">peakIdx</span><span class="p">,</span><span class="n">resampleRate_Hz</span><span class="p">,</span><span class="n">resampleMethod</span><span class="p">)</span>
+            <span class="c1">#print(self.signals[ch].beat2beatData.max)</span>
+            
+        <span class="c1">#register operation</span>
+        <span class="k">if</span> <span class="n">register</span><span class="p">:</span>
+            <span class="n">xmlElement</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="s2">&quot;beat2beat&quot;</span><span class="p">)</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;resampleMethod&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="n">resampleMethod</span><span class="p">)</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;resampleRate_Hz&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">resampleRate_Hz</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">registerOperation</span><span class="p">(</span><span class="n">xmlElement</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="patientData.removeBeat2beat"><a class="viewcode-back" href="../index.html#patientData.patientData.removeBeat2beat">[docs]</a>    <span class="k">def</span> <span class="nf">removeBeat2beat</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">hasB2Bdata</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nChannels</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">ch</span><span class="p">]</span><span class="o">.</span><span class="n">beat2beatData</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="k">pass</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hasB2Bdata</span><span class="o">=</span><span class="kc">False</span></div>
+        
+<div class="viewcode-block" id="patientData.LPfilterBeat2beat"><a class="viewcode-back" href="../index.html#patientData.patientData.LPfilterBeat2beat">[docs]</a>    <span class="k">def</span> <span class="nf">LPfilterBeat2beat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;movvalueingAverage&#39;</span><span class="p">,</span><span class="n">nTaps</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span><span class="n">register</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">hasB2Bdata</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Error: B2Bdata not found...&#39;</span><span class="p">)</span>
+            <span class="k">return</span>
+        
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">:</span>
+            <span class="n">s</span><span class="o">.</span><span class="n">beat2beatData</span><span class="o">.</span><span class="n">LPfilter</span><span class="p">(</span><span class="n">method</span><span class="p">,</span><span class="n">nTaps</span><span class="p">)</span>
+            
+        <span class="c1">#register operation</span>
+        <span class="k">if</span> <span class="n">register</span><span class="p">:</span>
+            <span class="n">xmlElement</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="s2">&quot;B2B_LPfilter&quot;</span><span class="p">)</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;method&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">method</span><span class="p">))</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;Ntaps&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">nTaps</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">registerOperation</span><span class="p">(</span><span class="n">xmlElement</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="patientData.computePSDwelch"><a class="viewcode-back" href="../index.html#patientData.patientData.computePSDwelch">[docs]</a>    <span class="k">def</span> <span class="nf">computePSDwelch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">useB2B</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">overlap</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span><span class="n">segmentLength_s</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span><span class="n">windowType</span><span class="o">=</span><span class="s1">&#39;hanning&#39;</span><span class="p">,</span><span class="n">removeBias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">filterSpectrum</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">filterType</span><span class="o">=</span><span class="s1">&#39;triangular&#39;</span><span class="p">,</span><span class="n">nTapsFilter</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+        <span class="c1">#find ABP and CBFV channels</span>
+        <span class="n">ABP_channel</span><span class="o">=</span><span class="kc">None</span>
+        <span class="n">CBFv_R_channel</span><span class="o">=</span><span class="kc">None</span>
+        <span class="n">CBFv_L_channel</span><span class="o">=</span><span class="kc">None</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">sigType</span><span class="o">==</span><span class="s1">&#39;ABP&#39;</span><span class="p">:</span>
+                <span class="n">ABP_channel</span><span class="o">=</span><span class="n">s</span><span class="o">.</span><span class="n">channel</span>
+            <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">sigType</span><span class="o">==</span><span class="s1">&#39;CBFV_R&#39;</span><span class="p">:</span>
+                <span class="n">CBFv_R_channel</span><span class="o">=</span><span class="n">s</span><span class="o">.</span><span class="n">channel</span>
+            <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">sigType</span><span class="o">==</span><span class="s1">&#39;CBFV_L&#39;</span><span class="p">:</span>
+                <span class="n">CBFv_L_channel</span><span class="o">=</span><span class="n">s</span><span class="o">.</span><span class="n">channel</span>
+        
+        <span class="c1">#left side</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">ABP_channel</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">CBFv_L_channel</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">useB2B</span><span class="p">:</span>
+                <span class="n">inputSignal</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">ABP_channel</span><span class="p">]</span><span class="o">.</span><span class="n">beat2beatData</span><span class="o">.</span><span class="n">avg</span>
+                <span class="n">outputSignal</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">CBFv_L_channel</span><span class="p">]</span><span class="o">.</span><span class="n">beat2beatData</span><span class="o">.</span><span class="n">avg</span>
+                <span class="n">Fs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">ABP_channel</span><span class="p">]</span><span class="o">.</span><span class="n">beat2beatData</span><span class="o">.</span><span class="n">samplingRate_Hz</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">inputSignal</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">ABP_channel</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+                <span class="n">outputSignal</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">CBFv_L_channel</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+                <span class="n">Fs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">ABP_channel</span><span class="p">]</span><span class="o">.</span><span class="n">samplingRate_Hz</span>
+
+            
+            <span class="bp">self</span><span class="o">.</span><span class="n">PSD_L</span><span class="o">=</span><span class="n">PSDestimator</span><span class="p">(</span><span class="n">inputSignal</span><span class="p">,</span><span class="n">outputSignal</span><span class="p">,</span><span class="n">Fs</span><span class="p">,</span> <span class="n">overlap</span><span class="p">,</span><span class="n">segmentLength_s</span><span class="p">,</span><span class="n">windowType</span><span class="p">,</span><span class="n">removeBias</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">PSD_L</span><span class="o">.</span><span class="n">computeWelch</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hasLdata</span><span class="o">=</span><span class="kc">True</span>
+            
+            <span class="k">if</span> <span class="n">filterSpectrum</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">PSD_L</span><span class="o">.</span><span class="n">filterAll</span><span class="p">(</span><span class="n">filterType</span><span class="p">,</span><span class="n">nTapsFilter</span><span class="p">,</span><span class="n">keepFirst</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hasLdata</span><span class="o">=</span><span class="kc">False</span>
+            
+        <span class="c1">#right channel</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">ABP_channel</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">CBFv_R_channel</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">useB2B</span><span class="p">:</span>
+                <span class="n">inputSignal</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">ABP_channel</span><span class="p">]</span><span class="o">.</span><span class="n">beat2beatData</span><span class="o">.</span><span class="n">avg</span>
+                <span class="n">outputSignal</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">CBFv_R_channel</span><span class="p">]</span><span class="o">.</span><span class="n">beat2beatData</span><span class="o">.</span><span class="n">avg</span>
+                <span class="n">Fs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">ABP_channel</span><span class="p">]</span><span class="o">.</span><span class="n">beat2beatData</span><span class="o">.</span><span class="n">samplingRate_Hz</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">inputSignal</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">ABP_channel</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+                <span class="n">outputSignal</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">CBFv_R_channel</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+                <span class="n">Fs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">ABP_channel</span><span class="p">]</span><span class="o">.</span><span class="n">samplingRate_Hz</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">PSD_R</span><span class="o">=</span><span class="n">PSDestimator</span><span class="p">(</span><span class="n">inputSignal</span><span class="p">,</span><span class="n">outputSignal</span><span class="p">,</span><span class="n">Fs</span><span class="p">,</span> <span class="n">overlap</span><span class="p">,</span><span class="n">segmentLength_s</span><span class="p">,</span><span class="n">windowType</span><span class="p">,</span><span class="n">removeBias</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">PSD_R</span><span class="o">.</span><span class="n">computeWelch</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hasRdata</span><span class="o">=</span><span class="kc">True</span>
+            
+            <span class="k">if</span> <span class="n">filterSpectrum</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">PSD_R</span><span class="o">.</span><span class="n">filterAll</span><span class="p">(</span><span class="n">filterType</span><span class="p">,</span><span class="n">nTapsFilter</span><span class="p">,</span><span class="n">keepFirst</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hasRdata</span><span class="o">=</span><span class="kc">False</span></div>
+    
+    <span class="c1"># estimatorType:  &#39;H1&#39;   or &#39;H2&#39;</span>
+<div class="viewcode-block" id="patientData.computeTFA"><a class="viewcode-back" href="../index.html#patientData.patientData.computeTFA">[docs]</a>    <span class="k">def</span> <span class="nf">computeTFA</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">estimatorType</span><span class="o">=</span><span class="s1">&#39;H1&#39;</span><span class="p">):</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hasLdata</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">TFA_L</span><span class="o">=</span><span class="n">transferFunctionAnalysis</span><span class="p">(</span><span class="n">welchData</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">PSD_L</span><span class="p">)</span>
+            <span class="k">if</span>  <span class="n">estimatorType</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;H1&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">TFA_L</span><span class="o">.</span><span class="n">computeH1</span><span class="p">()</span>
+            <span class="k">if</span>  <span class="n">estimatorType</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;H2&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">TFA_L</span><span class="o">.</span><span class="n">computeH2</span><span class="p">()</span>
+                
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hasRdata</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">TFA_R</span><span class="o">=</span><span class="n">transferFunctionAnalysis</span><span class="p">(</span><span class="n">welchData</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">PSD_R</span><span class="p">)</span>
+            <span class="k">if</span>  <span class="n">estimatorType</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;H1&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">TFA_R</span><span class="o">.</span><span class="n">computeH1</span><span class="p">()</span>
+            <span class="k">if</span>  <span class="n">estimatorType</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;H2&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">TFA_R</span><span class="o">.</span><span class="n">computeH2</span><span class="p">()</span></div></div>
+
+        
+        <span class="c1">#self.TFA_R.savePlot(fileNamePrefix=None)</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    
+    <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="o">.</span><span class="n">major</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;Sorry! This program requires Python 3.x</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="n">patientData</span><span class="o">.</span><span class="n">getVersion</span><span class="p">())</span>
+    
+    <span class="k">if</span> <span class="kc">False</span><span class="p">:</span>
+        <span class="n">file</span><span class="o">=</span><span class="s1">&#39;../data/CG21HG.dat&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">file</span><span class="o">=</span><span class="s1">&#39;../data/CG21HG.ppo&#39;</span>
+    <span class="k">if</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">x</span><span class="o">=</span><span class="n">patientData</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">x</span><span class="o">=</span><span class="n">patientData</span><span class="p">(</span><span class="s1">&#39;./simplesPeak.dat&#39;</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">examDate</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">listLabels</span><span class="p">())</span>
+    
+    <span class="n">x</span><span class="o">.</span><span class="n">computePSDwelch</span><span class="p">(</span><span class="n">useB2B</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">overlap</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span><span class="n">segmentLength_s</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span><span class="n">windowType</span><span class="o">=</span><span class="s1">&#39;hanning&#39;</span><span class="p">,</span><span class="n">removeBias</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">filterSpectrum</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">filterType</span><span class="o">=</span><span class="s1">&#39;triangular&#39;</span><span class="p">,</span><span class="n">nTapsFilter</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">nChannels</span><span class="p">):</span>
+        <span class="c1">#x.signals[i].resample(51,method=&#39;quadratic&#39;)</span>
+        <span class="c1">#x.signals[i].setLabel(&#39;signal_%d&#39; % i)</span>
+        <span class="c1">#x.signals[i].calibrate(i*10,i*20,method=&#39;percentile&#39;)</span>
+        <span class="n">x</span><span class="o">.</span><span class="n">signals</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>
+        <span class="c1">#print(x.signals[i].data)</span>
+        <span class="c1">#x.signals[i].cropFromRight(0)</span>
+        <span class="c1">#x.signals[i].interpolate(2,2)</span>
+        <span class="c1">#print(x.signals[i].data)</span>
+        
+    <span class="c1">#x.synchronizeSignals([1,2,0,3])</span>
+    
+    <span class="c1">#for i in range(x.nChannels):</span>
+    <span class="c1">#    print(x.signals[i].data)</span>
+        
+    <span class="c1">#x.saveSignals(&#39;lixo.res&#39;)</span>
+    <span class="c1">#x.findRRmarks(refChannel=0,method=&#39;md&#39;,findPeaks=True,findValleys=False)</span>
+    
+    <span class="c1">#print(x.peakIdx)</span>
+    <span class="c1">#x.signals[4].cropInterval(6,12,register=True,RemoveSegment=True,segmentIndexes=peaks)</span>
+    <span class="c1">#x.getBeat2beat(resampleRate_Hz=1.0,resampleMethod=&#39;linear&#39;)    </span>
+    
+    <span class="c1">#for i in range(x.nChannels):</span>
+    <span class="c1">#    print(x.signals[i].beat2beatData.max)</span>
+    <span class="c1">#    print(x.signals[i].beat2beatData.min)</span>
+    <span class="c1">#    print(x.signals[i].beat2beatData.avg)</span>
+        
+    <span class="c1">#x.saveOperations()</span>
+    <span class="c1">#x.saveBeat2beat(&#39;lixo.b2b&#39;,[0,2])</span>
+    
+    <span class="n">x</span><span class="o">.</span><span class="n">saveBeat2beat</span><span class="p">(</span><span class="s1">&#39;../data/lixo.b2b&#39;</span><span class="p">)</span>
+    <span class="n">x</span><span class="o">.</span><span class="n">saveSignals</span><span class="p">(</span><span class="s1">&#39;../data/lixo.sig&#39;</span><span class="p">)</span>
+    
+    
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CAAos Platform 0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Fernando Moura, Angela Salinet, João Salinet Júnior.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.7.
+    </div>
+  </body>
+</html>
