@@ -36,7 +36,7 @@ class GuiMain(QtWidgets.QMainWindow):
         qr.moveCenter(cp)
         self.move(qr.topLeft())
         
-        self.name='openCARbox'
+        self.name='CAAos Platform'
         self.setWindowTitle(self.name)
         self.show()
     

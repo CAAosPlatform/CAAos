@@ -1,15 +1,15 @@
-.. openCARbox documentation master file, created by
+.. CAAos Platform documentation master file, created by
    sphinx-quickstart on Wed Aug  7 14:04:25 2019.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to openCARbox's documentation!
+Welcome to CAAos Platform's documentation!
 ***************************************
 
 
 .. warning:: One introduction paragraph here!
 
-.. image:: ./images/openCARbox_logo.png
+.. image:: ./images/CAAos_logo.png
         :width: 600px
         :align: center
 
