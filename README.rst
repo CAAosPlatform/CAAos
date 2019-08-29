@@ -1,3 +1,3 @@
 Hi!
 
-Documentation <https://caaosplatform.github.io/CAAos/>
+Documentation <http://caaosplatform.github.io/CAAos/>
