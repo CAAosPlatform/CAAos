@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 Welcome to CAAos Platform's documentation!
-***************************************
+******************************************
 
 
 .. warning:: One introduction paragraph here!
@@ -55,6 +55,11 @@ patientData
     :show-inheritance:
     
 
+.. automodule:: signals
+    :members:
+    :undoc-members:
+    :show-inheritance:
+    
 
 Indices and tables
 ==================

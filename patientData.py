@@ -38,24 +38,14 @@ class patientData():
         
         **Example**
 
-        >>> import patientData
-        >>> 
-        >>> patientData.patientData.getVersion()
+        >>> from patientData import patientData as pD
+        >>> x=pD('data.EXP')
+        >>> print(x.getVersion())
         '0.1'
         """
         return __version__
     
     def __init__(self,inputFile):
-        """
-        Initialization routine.
-        
-        **Example**
-
-        >>> import patientData
-        >>> 
-        >>> patientData.patientData.getVersion()
-        '0.1'
-        """
         
         self.dirName,baseName=os.path.split(inputFile)
         self.filePrefix,fileExtension = os.path.splitext(baseName)
@@ -97,6 +87,63 @@ class patientData():
         self.signals=copy.deepcopy(self.historySignals[-1])
         
     def loadHeader(self):
+        """
+        Load header data from raw data files **.exp**, **.dat**.
+        
+        This function is usually used in the begining to extract general information from the file. This function is automatically called from :meth:`loadData`
+        
+        **Header format**
+        
+        The expected header format is::
+
+            Patient Name: XXXXX                                                       \\ H
+            birthday:DD:MM:YYYY                                                       | E
+            Examination:DD:M:YYYY HH:MM:SS                                            | A
+            Sampling Rate: XXXHz                                                      | D
+            Time	Sample	<CH_0_label>	<CH_1_label>	...   <CH_N_label>    | E    <- Labels: (columns separated by tabs)
+            HH:mm:ss:ms	N	<CH_0_unit>	<CH_1_unit>	...   <CH_N_unit>     / R    <-  Units: (columns separated by tabs)
+            00:00:00:00	0	0	45	...	14.8	                                  <-- table of data starts here
+            00:00:00:10	1	0	46	...	16.8
+            ...
+
+        
+        This function extracts only the following fields from the header 
+        
+        * Examination date
+        * Sampling Rate
+        * Number of channels
+        * Channel info: label and unit
+        
+        **Notes**
+        
+        * The examination date is stored as a :mod:`datetime` element in the attribute :attr:`examDate`.
+        * The number of channels is stored in the attribute :attr:`patientData.nChannels`.
+        * The sampling rate is stored in the attribute :attr:`patientData.samplingRate_Hz`. The value of this attribute is sent to instances of :class:`~signals.signal` after calling :meth:`loadData` and this attribute is removed after that
+        * Channel labels and units are stored in the attribute :attr:`patientData.signalLabels` and :attr:`patientData.signalUnits`. The values of these attributes are sent to instances of :class:`~signals.signal` after calling :meth:`loadData`  and these attributes are removed after that
+        
+        
+
+        **Example**
+
+        >>> from patientData import patientData as pD
+        >>> x=pD('data.EXP')
+        >>> x.loadHeader()
+        >>> print(x.examDate)
+        datetime.datetime(2016, 6, 30, 13, 7, 47)
+        >>> print(x.samplingRate_Hz)
+        datetime.datetime(2016, 6, 30, 13, 7, 47)
+        100.0
+        >>> print(x.nChannels)
+        4
+        >>> print(x.signalLabels)
+        ['Time', 'Sample', 'MCA_L_To_Probe_Env', 'MCA_R_To_Probe_Env', 'Analog_1', 'Analog_8']
+        >>> print(x.signalUnits)
+        ['HH:mm:ss:ms', 'N', 'cm/s', 'cm/s', 'mV', 'mV']
+
+        
+
+        
+        """
         file = open(self.fileName,'r')
         line=''
         self.sizeHeader=0
@@ -108,7 +155,8 @@ class patientData():
 
         date = datetime.strptime(line[12:].split()[0], '%d:%m:%Y').date()
         time = datetime.strptime(line[12:].split()[1], '%H:%M:%S').time()
-        self.examDate= datetime.combine(date,time)
+        self.examDate= datetime.combine(date,time)                       #: Examination Date.
+
         
         #extract sampling frequency in Hz
         while not line.startswith('Sampling Rate'):
@@ -138,7 +186,7 @@ class patientData():
         
         rawData=np.genfromtxt(self.fileName,delimiter=None,skip_header=self.sizeHeader,autostrip=True,names=','.join(self.signalLabels),dtype=dtypes)
       
-        self.nPoints=len(rawData)
+        nPoints=len(rawData)
         
         self.signals=[]
         for i in range(self.nChannels):
@@ -149,7 +197,6 @@ class patientData():
         del self.signalLabels
         del self.signalUnits
         del self.samplingRate_Hz
-        del self.nPoints
         
     #channelList: list or None.  List with the channels to save. 
     def saveSignals(self, fileName,channelList=None):

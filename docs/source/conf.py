@@ -196,3 +196,5 @@ epub_exclude_files = ['search.html']
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'https://docs.python.org/': None}
 autodoc_member_order = 'bysource'
+autodoc_special_members = '__init__'
+
