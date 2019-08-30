@@ -1,0 +1,504 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>signals &#8212; CAAos Platform 0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CAAos Platform 0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for signals</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/bin/python</span>
+
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">signal</span> <span class="k">as</span> <span class="n">scipySignal</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">interpolate</span> <span class="k">as</span> <span class="n">scipyInterpolate</span>
+<span class="kn">import</span> <span class="nn">tools</span>
+<span class="kn">import</span> <span class="nn">ampdLib</span>
+<span class="kn">import</span> <span class="nn">xml.etree.ElementTree</span> <span class="k">as</span> <span class="nn">ET</span>
+
+
+<div class="viewcode-block" id="signal"><a class="viewcode-back" href="../index.html#signals.signal">[docs]</a><span class="k">class</span> <span class="nc">signal</span><span class="p">():</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">channel</span><span class="p">,</span><span class="n">label</span><span class="p">,</span><span class="n">unit</span><span class="p">,</span><span class="n">data</span><span class="p">,</span><span class="n">samplingRate_Hz</span><span class="p">,</span><span class="n">operationsXML</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="o">=</span><span class="n">channel</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="o">=</span><span class="n">label</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unit</span><span class="o">=</span><span class="n">unit</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigType</span><span class="o">=</span><span class="kc">None</span> <span class="c1"># &#39;ABP&#39;,&#39;CBFV_L&#39;, &#39;CBFV_R&#39;, &#39;ETCO2&#39;, None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">=</span><span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">samplingRate_Hz</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">samplingRate_Hz</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nPoints</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">operationsXML</span><span class="o">=</span><span class="n">operationsXML</span>
+
+<div class="viewcode-block" id="signal.info"><a class="viewcode-back" href="../index.html#signals.signal.info">[docs]</a>    <span class="k">def</span> <span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;-------------------------------&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Channel: </span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;label: &#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;unit: &#39;</span>  <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;sigType: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sigType</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;nPoints: </span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">nPoints</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;-------------------------------&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="signal.saveData"><a class="viewcode-back" href="../index.html#signals.signal.saveData">[docs]</a>    <span class="k">def</span> <span class="nf">saveData</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">fileObj</span><span class="p">):</span>
+        <span class="n">fileObj</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;CHANNEL=</span><span class="si">%d</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
+        <span class="n">fileObj</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;LABEL=</span><span class="si">%s</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="p">)</span>
+        <span class="n">fileObj</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;UNIT=</span><span class="si">%s</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span>
+        <span class="n">fileObj</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;SIGNAL_TYPE=</span><span class="si">%s</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sigType</span><span class="p">))</span>
+        <span class="n">fileObj</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;SAMPLING_RATE_HZ=</span><span class="si">%g</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">samplingRate_Hz</span><span class="p">)</span>
+        <span class="n">fileObj</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;NPOINTS=</span><span class="si">%d</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">nPoints</span><span class="p">)</span>
+
+        <span class="n">np</span><span class="o">.</span><span class="n">set_printoptions</span><span class="p">(</span><span class="n">threshold</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+
+        <span class="n">fileObj</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;DATA=</span><span class="si">%s</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">np</span><span class="o">.</span><span class="n">array_str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span><span class="n">max_line_width</span><span class="o">=</span><span class="mi">1000</span><span class="p">))</span>
+        <span class="n">fileObj</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="o">*</span><span class="mi">80</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="p">)</span>
+
+        <span class="n">np</span><span class="o">.</span><span class="n">set_printoptions</span><span class="p">(</span><span class="n">threshold</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span> <span class="c1"># default</span></div>
+
+<div class="viewcode-block" id="signal.saveB2B"><a class="viewcode-back" href="../index.html#signals.signal.saveB2B">[docs]</a>    <span class="k">def</span> <span class="nf">saveB2B</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">fileObj</span><span class="p">):</span>
+        <span class="n">fileObj</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;CHANNEL=</span><span class="si">%d</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
+        <span class="n">fileObj</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;LABEL=</span><span class="si">%s</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="p">)</span>
+        <span class="n">fileObj</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;UNIT=</span><span class="si">%s</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span>
+        <span class="n">fileObj</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;SIGNAL_TYPE=</span><span class="si">%s</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sigType</span><span class="p">))</span>
+        <span class="n">fileObj</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;SAMPLING_RATE_HZ=</span><span class="si">%g</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">beat2beatData</span><span class="o">.</span><span class="n">samplingRate_Hz</span><span class="p">)</span>
+        <span class="n">fileObj</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;NPOINTS=</span><span class="si">%d</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">beat2beatData</span><span class="o">.</span><span class="n">nPoints</span><span class="p">)</span>
+
+        <span class="n">np</span><span class="o">.</span><span class="n">set_printoptions</span><span class="p">(</span><span class="n">threshold</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+
+        <span class="n">fileObj</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;TIME=</span><span class="si">%s</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">np</span><span class="o">.</span><span class="n">array_str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">beat2beatData</span><span class="o">.</span><span class="n">xData</span><span class="p">,</span><span class="n">max_line_width</span><span class="o">=</span><span class="mi">500</span><span class="p">))</span>
+        <span class="n">fileObj</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;MAX=</span><span class="si">%s</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">np</span><span class="o">.</span><span class="n">array_str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">beat2beatData</span><span class="o">.</span><span class="n">max</span><span class="p">,</span><span class="n">max_line_width</span><span class="o">=</span><span class="mi">500</span><span class="p">))</span>
+        <span class="n">fileObj</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;MIN=</span><span class="si">%s</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">np</span><span class="o">.</span><span class="n">array_str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">beat2beatData</span><span class="o">.</span><span class="n">min</span><span class="p">,</span><span class="n">max_line_width</span><span class="o">=</span><span class="mi">500</span><span class="p">))</span>
+        <span class="n">fileObj</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;AVG=</span><span class="si">%s</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">np</span><span class="o">.</span><span class="n">array_str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">beat2beatData</span><span class="o">.</span><span class="n">avg</span><span class="p">,</span><span class="n">max_line_width</span><span class="o">=</span><span class="mi">500</span><span class="p">))</span>
+
+        <span class="n">fileObj</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="o">*</span><span class="mi">80</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="p">)</span>
+        
+        <span class="n">np</span><span class="o">.</span><span class="n">set_printoptions</span><span class="p">(</span><span class="n">threshold</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span> <span class="c1"># default</span></div>
+        
+<div class="viewcode-block" id="signal.registerOperation"><a class="viewcode-back" href="../index.html#signals.signal.registerOperation">[docs]</a>    <span class="k">def</span> <span class="nf">registerOperation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">xmlElement</span><span class="p">):</span>
+        <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;channel&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">operationsXML</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">xmlElement</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="signal.setLabel"><a class="viewcode-back" href="../index.html#signals.signal.setLabel">[docs]</a>    <span class="k">def</span> <span class="nf">setLabel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">newLabel</span><span class="p">,</span><span class="n">register</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="o">=</span><span class="n">newLabel</span>
+        
+        <span class="c1">#register operation</span>
+        <span class="k">if</span> <span class="n">register</span><span class="p">:</span>
+            <span class="n">xmlElement</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="s2">&quot;setlabel&quot;</span><span class="p">)</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;label&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="n">newLabel</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">registerOperation</span><span class="p">(</span><span class="n">xmlElement</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="signal.setType"><a class="viewcode-back" href="../index.html#signals.signal.setType">[docs]</a>    <span class="k">def</span> <span class="nf">setType</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">newType</span><span class="p">,</span><span class="n">register</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigType</span><span class="o">=</span><span class="n">newType</span>
+        
+        <span class="c1">#register operation</span>
+        <span class="k">if</span> <span class="n">register</span><span class="p">:</span>
+            <span class="n">xmlElement</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="s2">&quot;setType&quot;</span><span class="p">)</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;type&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="n">newType</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">registerOperation</span><span class="p">(</span><span class="n">xmlElement</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="signal.findPeaksBySegments"><a class="viewcode-back" href="../index.html#signals.signal.findPeaksBySegments">[docs]</a>    <span class="k">def</span> <span class="nf">findPeaksBySegments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">segmentLengh_s</span><span class="o">=</span><span class="mf">20.0</span><span class="p">):</span>
+        <span class="n">segmentLength</span><span class="o">=</span><span class="n">segmentLengh_s</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">samplingRate_Hz</span>   <span class="c1"># equivalent to 20seconds of data</span>
+        <span class="n">nSegments</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nPoints</span> <span class="o">/</span> <span class="n">segmentLength</span><span class="p">)</span>
+        <span class="n">fmax_bpm</span><span class="o">=</span><span class="mi">200</span>
+        <span class="n">DeltaTMin</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span> <span class="mf">60.0</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">fmax_bpm</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">samplingRate_Hz</span> <span class="p">)</span>   <span class="c1"># number of samples that represents a frequency of 220bpm</span>
+        
+        <span class="n">dataSegments</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array_split</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">nSegments</span><span class="p">)</span>
+        
+        <span class="n">peakIdx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">valleyIdx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+        
+        <span class="n">idxStart</span><span class="o">=</span><span class="mi">0</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dataSegments</span><span class="p">)):</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">dataSegments</span><span class="p">[</span><span class="n">s</span><span class="p">]</span>
+            <span class="n">sMax</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="mf">90.0</span><span class="p">)</span>
+            <span class="n">smph</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="mf">60.0</span><span class="p">)</span>
+            <span class="n">sMin</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="mf">10.0</span><span class="p">)</span>
+            <span class="n">prominence</span><span class="o">=</span><span class="p">(</span><span class="n">sMax</span><span class="o">-</span><span class="n">sMin</span><span class="p">)</span><span class="o">*</span><span class="mf">0.1</span>
+
+            <span class="n">peakIdxSegment</span><span class="o">=</span><span class="n">tools</span><span class="o">.</span><span class="n">detect_peaks</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mph</span><span class="o">=</span><span class="n">smph</span><span class="p">,</span> <span class="n">mpd</span><span class="o">=</span><span class="n">DeltaTMin</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">edge</span><span class="o">=</span><span class="s1">&#39;rising&#39;</span><span class="p">,</span><span class="n">kpsh</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">MinPeakProminence</span><span class="o">=</span><span class="n">prominence</span><span class="p">,</span><span class="n">MinPeakProminenceSide</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span><span class="n">valley</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+            <span class="n">valleyIdxSegment</span><span class="o">=</span><span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">peakIdxSegment</span><span class="p">:</span>
+                <span class="n">cumulativeProminence</span><span class="o">=</span><span class="mi">0</span>
+                <span class="n">idx</span><span class="o">=</span><span class="n">i</span>
+                <span class="n">dx</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">-</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">while</span> <span class="n">idx</span><span class="o">&gt;=</span><span class="mi">0</span> <span class="ow">and</span> <span class="p">(</span><span class="n">dx</span><span class="o">&gt;</span><span class="mi">0</span> <span class="ow">or</span>  <span class="n">cumulativeProminence</span><span class="o">&lt;</span><span class="p">(</span><span class="n">sMax</span><span class="o">-</span><span class="n">sMin</span><span class="p">)</span><span class="o">*</span><span class="mf">0.5</span><span class="p">):</span>
+                    <span class="n">cumulativeProminence</span><span class="o">+=</span><span class="n">dx</span>
+                    <span class="n">idx</span><span class="o">-=</span><span class="mi">1</span>
+                    <span class="n">dx</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">-</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                    
+                <span class="k">if</span> <span class="n">idx</span><span class="o">&gt;=</span><span class="mi">0</span><span class="p">:</span>
+                    <span class="n">valleyIdxSegment</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+                
+            <span class="n">valleyIdxSegment</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">valleyIdxSegment</span><span class="p">)</span>
+            <span class="c1">#print(valleyIdxSegment)</span>
+            <span class="n">peakIdx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">peakIdx</span><span class="p">,</span> <span class="n">peakIdxSegment</span><span class="o">+</span><span class="n">idxStart</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+            <span class="n">valleyIdx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">valleyIdx</span><span class="p">,</span> <span class="n">valleyIdxSegment</span><span class="o">+</span><span class="n">idxStart</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+            <span class="n">idxStart</span><span class="o">+=</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        
+        <span class="c1">#print(peakIdx)</span>
+        <span class="n">peakVal</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">peakIdx</span><span class="p">]</span>
+        <span class="n">valleyVal</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">valleyIdx</span><span class="p">]</span>
+      
+        <span class="k">return</span> <span class="p">[</span><span class="n">peakIdx</span><span class="p">,</span><span class="n">peakVal</span><span class="p">,</span><span class="n">valleyIdx</span><span class="p">,</span><span class="n">valleyVal</span><span class="p">]</span></div>
+ 
+<div class="viewcode-block" id="signal.findPeaks"><a class="viewcode-back" href="../index.html#signals.signal.findPeaks">[docs]</a>    <span class="k">def</span> <span class="nf">findPeaks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;ampd&#39;</span><span class="p">,</span><span class="n">findPeaks</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">findValleys</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">register</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        
+        <span class="n">peakIdx</span><span class="o">=</span><span class="kc">None</span>
+        <span class="n">peakVal</span><span class="o">=</span><span class="kc">None</span>
+        <span class="n">valleyIdx</span><span class="o">=</span><span class="kc">None</span>
+        <span class="n">valleyVal</span><span class="o">=</span><span class="kc">None</span>
+                
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;ampd&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">findPeaks</span><span class="p">:</span>
+                <span class="n">peakIdx</span><span class="o">=</span><span class="n">ampdLib</span><span class="o">.</span><span class="n">ampdFast</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span><span class="n">LSMlimit</span> <span class="o">=</span> <span class="mf">0.2</span><span class="p">)</span>
+                
+                <span class="n">fmax_bpm</span><span class="o">=</span><span class="mi">250</span>
+                <span class="n">DeltaTMin</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span> <span class="mf">60.0</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">fmax_bpm</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">samplingRate_Hz</span> <span class="p">)</span>   <span class="c1"># number of samples that represents a frequency of 250bpm</span>
+                <span class="n">temp</span><span class="o">=</span><span class="p">[]</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">peakIdx</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">peakIdx</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">peakIdx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">&gt;</span><span class="n">DeltaTMin</span><span class="p">:</span>   <span class="c1"># 5 samples appart</span>
+                        <span class="n">temp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">peakIdx</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">temp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">peakIdx</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">peakIdx</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]))</span>
+                <span class="n">peakIdx</span><span class="o">=</span><span class="n">temp</span>
+            
+            
+            <span class="k">if</span> <span class="n">findValleys</span><span class="p">:</span>
+                <span class="n">valleyIdx</span><span class="o">=</span><span class="n">ampdLib</span><span class="o">.</span><span class="n">ampdFast</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span><span class="n">LSMlimit</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;md&#39;</span><span class="p">:</span>
+            <span class="n">fmax_bpm</span><span class="o">=</span><span class="mi">250</span>
+            <span class="n">sMax</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span><span class="mf">90.0</span><span class="p">)</span>
+            <span class="n">smph</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span><span class="mf">60.0</span><span class="p">)</span>
+            <span class="n">sMin</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span><span class="mf">10.0</span><span class="p">)</span>
+            <span class="n">prominence</span><span class="o">=</span><span class="p">(</span><span class="n">sMax</span><span class="o">-</span><span class="n">sMin</span><span class="p">)</span><span class="o">*</span><span class="mf">0.2</span>
+
+            <span class="n">DeltaTMin</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span> <span class="mf">60.0</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">fmax_bpm</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">samplingRate_Hz</span> <span class="p">)</span>   <span class="c1"># number of samples that represents a frequency of 250bpm</span>
+
+            <span class="n">peakIdx</span><span class="o">=</span><span class="n">tools</span><span class="o">.</span><span class="n">detect_peaks</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">mph</span><span class="o">=</span><span class="n">smph</span><span class="p">,</span> <span class="n">mpd</span><span class="o">=</span><span class="n">DeltaTMin</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">edge</span><span class="o">=</span><span class="s1">&#39;rising&#39;</span><span class="p">,</span><span class="n">kpsh</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">MinPeakProminence</span><span class="o">=</span><span class="n">prominence</span><span class="p">,</span><span class="n">MinPeakProminenceSide</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span><span class="n">valley</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            
+            <span class="k">if</span> <span class="n">findValleys</span><span class="p">:</span>
+                <span class="n">valleyIdx</span><span class="o">=</span><span class="p">[]</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">peakIdx</span><span class="p">:</span>
+                    <span class="n">cumulativeProminence</span><span class="o">=</span><span class="mi">0</span>
+                    <span class="n">idx</span><span class="o">=</span><span class="n">i</span>
+                    <span class="n">dx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="k">while</span> <span class="n">idx</span><span class="o">&gt;=</span><span class="mi">0</span> <span class="ow">and</span> <span class="p">(</span><span class="n">dx</span><span class="o">&gt;</span><span class="mi">0</span> <span class="ow">or</span>  <span class="n">cumulativeProminence</span><span class="o">&lt;</span><span class="p">(</span><span class="n">sMax</span><span class="o">-</span><span class="n">sMin</span><span class="p">)</span><span class="o">*</span><span class="mf">0.5</span><span class="p">):</span>
+                        <span class="n">cumulativeProminence</span><span class="o">+=</span><span class="n">dx</span>
+                        <span class="n">idx</span><span class="o">-=</span><span class="mi">1</span>
+                        <span class="n">dx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                        
+                    <span class="n">valleyIdx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+                    
+                <span class="n">valleyIdx</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">valleyIdx</span><span class="p">)</span>
+                
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">findPeaks</span><span class="p">:</span>
+                <span class="n">peakIdx</span><span class="o">=</span><span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">findPeaks</span><span class="p">:</span>
+            <span class="n">peakIdx</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">peakIdx</span><span class="p">)</span> <span class="c1"># removes eventual repeated indexes</span>
+        <span class="k">if</span> <span class="n">findValleys</span><span class="p">:</span>
+            <span class="n">valleyIdx</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">valleyIdx</span><span class="p">)</span> <span class="c1"># removes eventual repeated indexes</span>
+                
+        <span class="k">if</span> <span class="n">findPeaks</span><span class="p">:</span>
+            <span class="n">peakVal</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">peakIdx</span><span class="p">]</span>
+            
+        <span class="k">if</span> <span class="n">findValleys</span><span class="p">:</span>
+            <span class="n">valleyVal</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">valleyIdx</span><span class="p">]</span>
+                
+        <span class="c1">#register operation</span>
+        <span class="k">if</span> <span class="n">register</span><span class="p">:</span>
+            <span class="n">xmlElement</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="s2">&quot;findPeaksSignal&quot;</span><span class="p">)</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;findPeaks&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">findPeaks</span><span class="p">))</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;findValleys&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">findValleys</span><span class="p">))</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;method&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="n">method</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">registerOperation</span><span class="p">(</span><span class="n">xmlElement</span><span class="p">)</span>
+                
+      
+        <span class="k">return</span> <span class="p">[</span><span class="n">peakIdx</span><span class="p">,</span><span class="n">peakVal</span><span class="p">,</span><span class="n">valleyIdx</span><span class="p">,</span><span class="n">valleyVal</span><span class="p">]</span></div>
+    
+    <span class="c1"># if segmentIndexes=None (default) considers all data, otherwise it is expected a list with start and end indexes</span>
+<div class="viewcode-block" id="signal.yLimits"><a class="viewcode-back" href="../index.html#signals.signal.yLimits">[docs]</a>    <span class="k">def</span> <span class="nf">yLimits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;percentile&#39;</span><span class="p">,</span><span class="n">detrend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">segmentIndexes</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">min</span><span class="o">=</span><span class="mi">0</span>
+        <span class="nb">max</span><span class="o">=</span><span class="mi">0</span>
+        
+        <span class="k">if</span> <span class="n">segmentIndexes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">segmentIndexes</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">segmentIndexes</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+
+        <span class="k">if</span> <span class="n">detrend</span><span class="p">:</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">scipySignal</span><span class="o">.</span><span class="n">detrend</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;absolute&#39;</span><span class="p">:</span>
+            <span class="nb">max</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="nb">min</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;percentile&#39;</span><span class="p">:</span>
+            <span class="nb">min</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="mf">5.0</span><span class="p">)</span>
+            <span class="nb">max</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="mf">95.0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="nb">min</span><span class="p">,</span><span class="nb">max</span><span class="p">]</span></div>
+        
+        
+    <span class="c1"># if segmentIndexes=None (default) considers all data, otherwise it is expected a list with start and end indexes</span>
+<div class="viewcode-block" id="signal.calibrate"><a class="viewcode-back" href="../index.html#signals.signal.calibrate">[docs]</a>    <span class="k">def</span> <span class="nf">calibrate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">valMax</span><span class="p">,</span><span class="n">valMin</span><span class="p">,</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;percentile&#39;</span><span class="p">,</span><span class="n">segmentIndexes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">register</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        
+        <span class="k">if</span> <span class="n">valMax</span><span class="o">&lt;=</span><span class="n">valMin</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="c1">#print(segmentIndexes)</span>
+        <span class="p">[</span><span class="n">x1</span><span class="p">,</span><span class="n">x2</span><span class="p">]</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">yLimits</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span><span class="n">detrend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">segmentIndexes</span><span class="o">=</span><span class="n">segmentIndexes</span><span class="p">)</span>
+
+        <span class="n">y2</span><span class="o">=</span><span class="n">valMax</span>
+        <span class="n">y1</span><span class="o">=</span><span class="n">valMin</span>
+        
+        <span class="c1">#linear interpolation        </span>
+        <span class="n">ang_coef</span><span class="o">=</span><span class="p">(</span><span class="n">y2</span><span class="o">-</span><span class="n">y1</span><span class="p">)</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">x2</span><span class="o">-</span><span class="n">x1</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">ang_coef</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">-</span><span class="n">x1</span><span class="p">)</span> <span class="o">+</span> <span class="n">y1</span>
+        
+        <span class="c1">#register operation</span>
+        <span class="k">if</span> <span class="n">register</span><span class="p">:</span>
+            <span class="n">xmlElement</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="s2">&quot;calibrate&quot;</span><span class="p">)</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;valMin&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">valMin</span><span class="p">))</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;valMax&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">valMax</span><span class="p">))</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;method&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">method</span><span class="p">))</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;segmentIndexes&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">segmentIndexes</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">registerOperation</span><span class="p">(</span><span class="n">xmlElement</span><span class="p">)</span></div>
+    
+    <span class="c1">#remove elemetns betwen start/end, including these limits.</span>
+<div class="viewcode-block" id="signal.cropInterval"><a class="viewcode-back" href="../index.html#signals.signal.cropInterval">[docs]</a>    <span class="k">def</span> <span class="nf">cropInterval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">start</span><span class="p">,</span><span class="n">end</span><span class="p">,</span><span class="n">register</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">RemoveSegment</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">segmentIndexes</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="c1">#register operation</span>
+        <span class="k">if</span> <span class="n">register</span><span class="p">:</span>
+            <span class="n">xmlElement</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="s2">&quot;cropInterval&quot;</span><span class="p">)</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;frameStart&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">start</span><span class="p">))</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;frameEnd&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">end</span><span class="p">))</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;RemoveSegment&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">RemoveSegment</span><span class="p">))</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;segmentIndexes&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">segmentIndexes</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">registerOperation</span><span class="p">(</span><span class="n">xmlElement</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">RemoveSegment</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">segmentIndexes</span><span class="p">)</span> <span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+                <span class="n">end</span><span class="o">=</span><span class="n">segmentIndexes</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">segmentIndexes</span><span class="p">,</span><span class="n">end</span><span class="p">)]</span>
+                <span class="n">start</span><span class="o">=</span><span class="n">segmentIndexes</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">segmentIndexes</span><span class="p">,</span><span class="n">start</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                
+        <span class="k">if</span> <span class="p">(</span><span class="n">end</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">&gt;</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="ow">or</span> <span class="n">start</span><span class="o">&lt;</span><span class="mi">0</span> <span class="ow">or</span> <span class="p">(</span><span class="n">end</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">&lt;</span><span class="n">start</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Invalid interval&#39;</span><span class="p">)</span>
+            <span class="k">return</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="n">start</span><span class="p">,</span><span class="n">end</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nPoints</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
+
+    <span class="c1"># remove the specified number of elements from right. Ex: if nelem=1, removes only one element from right</span>
+<div class="viewcode-block" id="signal.cropFromRight"><a class="viewcode-back" href="../index.html#signals.signal.cropFromRight">[docs]</a>    <span class="k">def</span> <span class="nf">cropFromRight</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">nElem</span><span class="p">,</span><span class="n">register</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">nElem</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">nPoints</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;data does not have so many elements&#39;</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="n">nElem</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;negative number of elements&#39;</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cropInterval</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nPoints</span><span class="o">-</span><span class="n">nElem</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">nPoints</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">register</span><span class="p">)</span></div>
+    
+    <span class="c1"># remove the specified number of elements from right. Ex: if nelem=1, removes only one element from left</span>
+<div class="viewcode-block" id="signal.cropFromLeft"><a class="viewcode-back" href="../index.html#signals.signal.cropFromLeft">[docs]</a>    <span class="k">def</span> <span class="nf">cropFromLeft</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">nElem</span><span class="p">,</span><span class="n">register</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">nElem</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">nPoints</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;data does not have so many elements&#39;</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="n">nElem</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;negative number of elements&#39;</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cropInterval</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">nElem</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">register</span><span class="p">)</span></div>
+    
+    <span class="c1"># valid methods:            &#39;linear&#39;, &#39;nearest&#39;,</span>
+    <span class="c1"># spline methods:           &#39;zero&#39;, &#39;slinear&#39;, &#39;quadratic&#39;, &#39;cubic&#39;,</span>
+    <span class="c1"># previoues or next values: &#39;previous&#39;, &#39;next&#39;</span>
+<div class="viewcode-block" id="signal.resample"><a class="viewcode-back" href="../index.html#signals.signal.resample">[docs]</a>    <span class="k">def</span> <span class="nf">resample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">newSampleRate</span><span class="p">,</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span><span class="n">register</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">xData</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nPoints</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">samplingRate_Hz</span>
+        <span class="n">f</span><span class="o">=</span><span class="n">scipyInterpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="n">xData</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span> <span class="n">assume_sorted</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        
+        <span class="n">xNew</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">xData</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">xData</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="mf">1.0</span><span class="o">/</span><span class="n">newSampleRate</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">xNew</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">samplingRate_Hz</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">newSampleRate</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nPoints</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1">#register operation</span>
+        <span class="k">if</span> <span class="n">register</span><span class="p">:</span>
+            <span class="n">xmlElement</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="s2">&quot;resample&quot;</span><span class="p">)</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;sampleRate&#39;</span><span class="p">,</span><span class="n">attrib</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;unit&#39;</span><span class="p">:</span><span class="s1">&#39;Hz&#39;</span><span class="p">},</span><span class="n">text</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">newSampleRate</span><span class="p">))</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;method&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">method</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">registerOperation</span><span class="p">(</span><span class="n">xmlElement</span><span class="p">)</span></div>
+    
+    <span class="c1"># interpolate data in the interval [start,end], including the limits</span>
+<div class="viewcode-block" id="signal.interpolate"><a class="viewcode-back" href="../index.html#signals.signal.interpolate">[docs]</a>    <span class="k">def</span> <span class="nf">interpolate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">start</span><span class="p">,</span><span class="n">end</span><span class="p">,</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span><span class="n">register</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">end</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">&gt;</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="ow">or</span> <span class="n">start</span><span class="o">&lt;</span><span class="mi">0</span> <span class="ow">or</span> <span class="p">(</span><span class="n">end</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">&lt;</span><span class="n">start</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Invalid interval&#39;</span><span class="p">)</span>
+            <span class="k">return</span>
+        
+        <span class="n">nIntervals</span><span class="o">=</span><span class="n">end</span><span class="o">-</span><span class="n">start</span>
+        
+        <span class="k">if</span> <span class="n">nIntervals</span> <span class="o">&lt;</span><span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span><span class="s1">&#39;linear&#39;</span><span class="p">:</span>
+            <span class="n">deltaY</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">end</span><span class="p">]</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">start</span><span class="p">])</span><span class="o">/</span><span class="n">nIntervals</span>
+        
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nIntervals</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">start</span><span class="o">+</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">start</span><span class="p">]</span><span class="o">+</span><span class="n">deltaY</span><span class="o">*</span><span class="n">i</span>
+        
+        <span class="c1">#register operation</span>
+        <span class="k">if</span> <span class="n">register</span><span class="p">:</span>
+            <span class="n">xmlElement</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="s2">&quot;interpolate&quot;</span><span class="p">)</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;frameStart&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">start</span><span class="p">))</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;frameEnd&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">end</span><span class="p">))</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;method&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">method</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">registerOperation</span><span class="p">(</span><span class="n">xmlElement</span><span class="p">)</span></div>
+            
+<div class="viewcode-block" id="signal.LPfilter"><a class="viewcode-back" href="../index.html#signals.signal.LPfilter">[docs]</a>    <span class="k">def</span> <span class="nf">LPfilter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;movingAverage&#39;</span><span class="p">,</span><span class="n">nTaps</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span><span class="n">register</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;movingAverage&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">scipySignal</span><span class="o">.</span><span class="n">filtfilt</span><span class="p">([</span><span class="mf">1.0</span><span class="o">/</span><span class="n">nTaps</span><span class="p">,]</span><span class="o">*</span><span class="n">nTaps</span><span class="p">,</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+    
+        <span class="c1">#register operation</span>
+        <span class="k">if</span> <span class="n">register</span><span class="p">:</span>
+            <span class="n">xmlElement</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="s2">&quot;LPfilter&quot;</span><span class="p">)</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;method&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">method</span><span class="p">))</span>
+            <span class="n">tools</span><span class="o">.</span><span class="n">TEsimple</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">xmlElement</span><span class="p">,</span><span class="n">tag</span><span class="o">=</span><span class="s1">&#39;Ntaps&#39;</span><span class="p">,</span><span class="n">text</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">nTaps</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">registerOperation</span><span class="p">(</span><span class="n">xmlElement</span><span class="p">)</span></div>
+
+    <span class="c1"># resampling methods</span>
+    <span class="c1"># valid methods:            &#39;linear&#39;, &#39;nearest&#39;,</span>
+    <span class="c1"># spline methods:           &#39;zero&#39;, &#39;slinear&#39;, &#39;quadratic&#39;, &#39;cubic&#39;,</span>
+    <span class="c1"># previoues or next values: &#39;previous&#39;, &#39;next&#39;</span>
+<div class="viewcode-block" id="signal.beat2beat"><a class="viewcode-back" href="../index.html#signals.signal.beat2beat">[docs]</a>    <span class="k">def</span> <span class="nf">beat2beat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">beat_idx</span><span class="p">,</span><span class="n">resampleRate_Hz</span><span class="o">=</span><span class="mf">100.0</span><span class="p">,</span><span class="n">resampleMethod</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beat2beatData</span><span class="o">=</span><span class="n">beat2beat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span><span class="n">beat_idx</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">samplingRate_Hz</span><span class="p">,</span><span class="n">resampleRate_Hz</span><span class="p">,</span><span class="n">resampleMethod</span><span class="p">)</span></div></div>
+
+<div class="viewcode-block" id="beat2beat"><a class="viewcode-back" href="../index.html#signals.beat2beat">[docs]</a><span class="k">class</span> <span class="nc">beat2beat</span><span class="p">():</span>
+    
+    <span class="c1">#data_samplingRate_Hz: sampling rate associated to data and beat_idx indices</span>
+    <span class="c1">#resampleRate_Hz: sampling rate after resampling the beat to beat signal</span>
+    <span class="c1"># resampling method</span>
+    <span class="c1"># valid methods:            &#39;linear&#39;, &#39;nearest&#39;,</span>
+    <span class="c1"># spline methods:           &#39;zero&#39;, &#39;slinear&#39;, &#39;quadratic&#39;, &#39;cubic&#39;,</span>
+    <span class="c1"># previoues or next values: &#39;previous&#39;, &#39;next&#39;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">data</span><span class="p">,</span><span class="n">beat_idx</span><span class="p">,</span><span class="n">data_samplingRate_Hz</span><span class="p">,</span><span class="n">resampleRate_Hz</span><span class="o">=</span><span class="mf">100.0</span><span class="p">,</span><span class="n">resampleMethod</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max</span><span class="o">=</span><span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min</span><span class="o">=</span><span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">avg</span><span class="o">=</span><span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xData</span><span class="o">=</span><span class="n">beat_idx</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="n">data_samplingRate_Hz</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nPoints</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">xData</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">beat_idx</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">max</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">beat_idx</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span><span class="n">beat_idx</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]]))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">min</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">beat_idx</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span><span class="n">beat_idx</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]]))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">avg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">beat_idx</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span><span class="n">beat_idx</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]]))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">min</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">avg</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">avg</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">resampleRate_Hz</span><span class="p">,</span><span class="n">resampleMethod</span><span class="p">)</span>
+        
+<div class="viewcode-block" id="beat2beat.LPfilter"><a class="viewcode-back" href="../index.html#signals.beat2beat.LPfilter">[docs]</a>    <span class="k">def</span> <span class="nf">LPfilter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;movingAverage&#39;</span><span class="p">,</span><span class="n">nTaps</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;movingAverage&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">max</span> <span class="o">=</span> <span class="n">scipySignal</span><span class="o">.</span><span class="n">filtfilt</span><span class="p">([</span><span class="mf">1.0</span><span class="o">/</span><span class="n">nTaps</span><span class="p">,]</span><span class="o">*</span><span class="n">nTaps</span><span class="p">,</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">max</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">min</span> <span class="o">=</span> <span class="n">scipySignal</span><span class="o">.</span><span class="n">filtfilt</span><span class="p">([</span><span class="mf">1.0</span><span class="o">/</span><span class="n">nTaps</span><span class="p">,]</span><span class="o">*</span><span class="n">nTaps</span><span class="p">,</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">min</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">avg</span> <span class="o">=</span> <span class="n">scipySignal</span><span class="o">.</span><span class="n">filtfilt</span><span class="p">([</span><span class="mf">1.0</span><span class="o">/</span><span class="n">nTaps</span><span class="p">,]</span><span class="o">*</span><span class="n">nTaps</span><span class="p">,</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">avg</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="beat2beat.resample"><a class="viewcode-back" href="../index.html#signals.beat2beat.resample">[docs]</a>    <span class="k">def</span> <span class="nf">resample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">resampleRate_Hz</span><span class="p">,</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">):</span>
+        <span class="n">xNew</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xData</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">xData</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="mf">1.0</span><span class="o">/</span><span class="n">resampleRate_Hz</span><span class="p">)</span>
+        
+        <span class="c1">#max</span>
+        <span class="n">f</span><span class="o">=</span><span class="n">scipyInterpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xData</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">max</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">max</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span> <span class="n">assume_sorted</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">xNew</span><span class="p">)</span>
+        <span class="c1">#min</span>
+        <span class="n">f</span><span class="o">=</span><span class="n">scipyInterpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xData</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">min</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">min</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">min</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span> <span class="n">assume_sorted</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">xNew</span><span class="p">)</span>
+        <span class="c1">#avg</span>
+        <span class="n">f</span><span class="o">=</span><span class="n">scipyInterpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xData</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">avg</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">avg</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="bp">self</span><span class="o">.</span><span class="n">avg</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span> <span class="n">assume_sorted</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">avg</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">xNew</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">xData</span><span class="o">=</span><span class="n">xNew</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nPoints</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">xData</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">samplingRate_Hz</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">resampleRate_Hz</span><span class="p">)</span></div></div>
+        
+        
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    
+    <span class="n">x</span><span class="o">=</span><span class="n">signal</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;aa&#39;</span><span class="p">,</span><span class="n">unit</span><span class="o">=</span><span class="s1">&#39;cm/s&#39;</span><span class="p">,</span><span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]),</span><span class="n">samplingRate_Hz</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span><span class="n">operationsXML</span><span class="o">=</span><span class="n">ET</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="s2">&quot;temp&quot;</span><span class="p">))</span>
+    <span class="n">x</span><span class="o">.</span><span class="n">info</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">CAAos Platform 0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Fernando Moura, Angela Salinet, João Salinet Júnior.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.7.
+    </div>
+  </body>
+</html>

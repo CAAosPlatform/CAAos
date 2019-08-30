@@ -48,7 +48,8 @@
 <h1 id="index">Index</h1>
 
 <div class="genindex-jumpbox">
- <a href="#C"><strong>C</strong></a>
+ <a href="#B"><strong>B</strong></a>
+ | <a href="#C"><strong>C</strong></a>
  | <a href="#F"><strong>F</strong></a>
  | <a href="#G"><strong>G</strong></a>
  | <a href="#I"><strong>I</strong></a>
@@ -57,16 +58,37 @@
  | <a href="#R"><strong>R</strong></a>
  | <a href="#S"><strong>S</strong></a>
  | <a href="#U"><strong>U</strong></a>
+ | <a href="#Y"><strong>Y</strong></a>
  
 </div>
-<h2 id="C">C</h2>
+<h2 id="B">B</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="index.html#patientData.patientData.computePSDwelch">computePSDwelch() (patientData.patientData method)</a>
+      <li><a href="index.html#signals.beat2beat">beat2beat (class in signals)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="index.html#signals.signal.beat2beat">beat2beat() (signals.signal method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="C">C</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="index.html#signals.signal.calibrate">calibrate() (signals.signal method)</a>
+</li>
+      <li><a href="index.html#patientData.patientData.computePSDwelch">computePSDwelch() (patientData.patientData method)</a>
+</li>
       <li><a href="index.html#patientData.patientData.computeTFA">computeTFA() (patientData.patientData method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="index.html#signals.signal.cropFromLeft">cropFromLeft() (signals.signal method)</a>
+</li>
+      <li><a href="index.html#signals.signal.cropFromRight">cropFromRight() (signals.signal method)</a>
+</li>
+      <li><a href="index.html#signals.signal.cropInterval">cropInterval() (signals.signal method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -76,9 +98,13 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#patientData.patientData.findChannelByLabel">findChannelByLabel() (patientData.patientData method)</a>
 </li>
+      <li><a href="index.html#patientData.patientData.findDelay">findDelay() (patientData.patientData method)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="index.html#patientData.patientData.findDelay">findDelay() (patientData.patientData method)</a>
+      <li><a href="index.html#signals.signal.findPeaks">findPeaks() (signals.signal method)</a>
+</li>
+      <li><a href="index.html#signals.signal.findPeaksBySegments">findPeaksBySegments() (signals.signal method)</a>
 </li>
       <li><a href="index.html#patientData.patientData.findRRmarks">findRRmarks() (patientData.patientData method)</a>
 </li>
@@ -100,7 +126,13 @@
 <h2 id="I">I</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="index.html#signals.signal.info">info() (signals.signal method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#patientData.patientData.insertPeak">insertPeak() (patientData.patientData method)</a>
+</li>
+      <li><a href="index.html#signals.signal.interpolate">interpolate() (signals.signal method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -112,12 +144,18 @@
 </li>
       <li><a href="index.html#patientData.patientData.loadData">loadData() (patientData.patientData method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#patientData.patientData.loadHeader">loadHeader() (patientData.patientData method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#patientData.patientData.loadOperations">loadOperations() (patientData.patientData method)</a>
 </li>
+      <li><a href="index.html#signals.beat2beat.LPfilter">LPfilter() (signals.beat2beat method)</a>
+
+      <ul>
+        <li><a href="index.html#signals.signal.LPfilter">(signals.signal method)</a>
+</li>
+      </ul></li>
       <li><a href="index.html#patientData.patientData.LPfilterBeat2beat">LPfilterBeat2beat() (patientData.patientData method)</a>
 </li>
   </ul></td>
@@ -143,7 +181,11 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#patientData.patientData.registerOperation">registerOperation() (patientData.patientData method)</a>
+
+      <ul>
+        <li><a href="index.html#signals.signal.registerOperation">(signals.signal method)</a>
 </li>
+      </ul></li>
       <li><a href="index.html#patientData.patientData.removeBeat2beat">removeBeat2beat() (patientData.patientData method)</a>
 </li>
   </ul></td>
@@ -152,19 +194,37 @@
 </li>
       <li><a href="index.html#patientData.patientData.removeRRmarks">removeRRmarks() (patientData.patientData method)</a>
 </li>
+      <li><a href="index.html#signals.beat2beat.resample">resample() (signals.beat2beat method)</a>
+
+      <ul>
+        <li><a href="index.html#signals.signal.resample">(signals.signal method)</a>
+</li>
+      </ul></li>
   </ul></td>
 </tr></table>
 
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="index.html#signals.signal.saveB2B">saveB2B() (signals.signal method)</a>
+</li>
       <li><a href="index.html#patientData.patientData.saveBeat2beat">saveBeat2beat() (patientData.patientData method)</a>
+</li>
+      <li><a href="index.html#signals.signal.saveData">saveData() (signals.signal method)</a>
 </li>
       <li><a href="index.html#patientData.patientData.saveOperations">saveOperations() (patientData.patientData method)</a>
 </li>
+      <li><a href="index.html#patientData.patientData.saveSignals">saveSignals() (patientData.patientData method)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="index.html#patientData.patientData.saveSignals">saveSignals() (patientData.patientData method)</a>
+      <li><a href="index.html#signals.signal.setLabel">setLabel() (signals.signal method)</a>
+</li>
+      <li><a href="index.html#signals.signal.setType">setType() (signals.signal method)</a>
+</li>
+      <li><a href="index.html#signals.signal">signal (class in signals)</a>
+</li>
+      <li><a href="index.html#module-signals">signals (module)</a>
 </li>
       <li><a href="index.html#patientData.patientData.storeState">storeState() (patientData.patientData method)</a>
 </li>
@@ -177,6 +237,14 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="index.html#patientData.patientData.undoState">undoState() (patientData.patientData method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="Y">Y</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="index.html#signals.signal.yLimits">yLimits() (signals.signal method)</a>
 </li>
   </ul></td>
 </tr></table>
