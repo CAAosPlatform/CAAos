@@ -44,7 +44,7 @@ class autoregulation_GUI(QtWidgets.QWidget):
         if self.data is not None:
             self.closeFile()
         
-        if False:
+        if True:
             self.fileName,_ = QtWidgets.QFileDialog.getOpenFileName(self, 'Select input file','','all (*.EXP *.exp  *.DAT *.dat *.PPO *.ppo);;Signal data (.exp .dat) (*.EXP *.exp  *.DAT *.dat);;Preprocessing operations (.ppo) (*.PPO *.ppo)')
         else:
             print('LOAD de arquivo abreviado! ver loadData_Gui.py, linha 94')
