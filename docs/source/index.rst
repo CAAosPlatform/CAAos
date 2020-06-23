@@ -18,17 +18,17 @@ Welcome to CAAos Platform's documentation!
 Contents:
 ==========================================
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
 `Main Features`_
 
 `Installation and requirements`_
 
+
+`Preprocessing Operations (.PPO) file format`_
+
 `Module definitions`_
 
 `Indices and tables`_
+
 
 Main Features
 =============
@@ -41,6 +41,19 @@ Installation and requirements
 .. warning:: Installation instructions here
 
 
+.. _ppo_file_format_label:
+
+Preprocessing Operations (.PPO) file format
+===========================================
+
+.. warning:: PPO file format here
+
+
+
+        All the operations applied are stored in :attr:`operationsXML`, a :mod:`xml.etree.ElementTree` instance. This function saves all operations stored to a text file. This allows for re-run the analysis on the same file, or apply the same set of operations to different cases.
+        
+        
+        
 Module definitions
 ==================
 
@@ -53,7 +66,10 @@ patientData
     :members:
     :undoc-members:
     :show-inheritance:
-    
+
+
+signals
+----------------------
 
 .. automodule:: signals
     :members:

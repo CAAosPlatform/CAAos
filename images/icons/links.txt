@@ -1,0 +1,11 @@
+Material Design icons by Google:
+http://google.github.io/material-design-icons/
+Available under Apache license version 2.0.
+
+
+Browsing and downloading individual icons:
+https://material.io/resources/icons/?style=baseline
+
+Git repository:
+https://github.com/google/material-design-icons
+
