@@ -172,6 +172,7 @@ class transferFunctionAnalysis():
         return self.freqRangeExtractor.getStatistics(values, freqRange)
 
     def savePlot(self, fileNamePrefix=None, fileType='png', coheTreshold=True, significanceAlpha='5%', remNegPhase=True, figDpi=250, fontSize=6):
+        # fileType: 'png','jpg','tif','pdf','svg','eps','ps'
         fig, ax = plt.subplots(3, 1, sharex=True, figsize=[8, 5])
         freqRangeColors = ['#d5e5ff', '#d7f4d7', '#ffe6d5']
         # ---------------------

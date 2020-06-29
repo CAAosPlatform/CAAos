@@ -13,6 +13,8 @@ from spectrumPlotWidget import plotArray, pyQtConf
 
 # dict format:  '#code' : (paramValue,'string name')
 estimatorTypeDict = {0: ('H1', 'H1=Sxy/Sxx'), 1: ('H2', 'H2=Syy/Syx')}
+plotFileFormatDict = {0: ('png', 'PNG'), 1: ('jpg', 'JPG'), 2: ('tif', 'TIF'), 3: ('pdf', 'PDF'), 4: ('svg', 'SVG'), 5: ('eps', 'EPS'),
+                      6: ('ps', 'PS')}
 
 
 class TFAWidget(QtWidgets.QWidget):
@@ -59,6 +61,16 @@ class TFAWidget(QtWidgets.QWidget):
         negativePhaseControl.stateChanged.connect(lambda: self.registerOptions('negativePhase'))
 
         formLayout.addRow('Ignore negative Phase', negativePhaseControl)
+
+        # plot file format
+        default = 0  # png
+        self.plotFileFormat = plotFileFormatDict[default][0]
+        plotFileFormatControl = QtWidgets.QComboBox()
+        plotFileFormatControl.addItems([x[1] for x in plotFileFormatDict.values()])
+        plotFileFormatControl.setCurrentIndex(default)
+        plotFileFormatControl.currentIndexChanged.connect(lambda: self.registerOptions('plotFileFormat'))
+
+        formLayout.addRow('Plot file format', plotFileFormatControl)
 
         # TFA button
         self.applyTFAButton = QtWidgets.QPushButton('Compute TFA')
@@ -151,6 +163,8 @@ class TFAWidget(QtWidgets.QWidget):
             self.coheTreshold = self.sender().isChecked()
         if typeOpt == 'negativePhase':
             self.removeNegPhase = self.sender().isChecked()
+        if typeOpt == 'plotFileFormat':
+            self.plotFileFormat = plotFileFormatDict[self.sender().currentIndex()][0]
 
     # synchronize signals
     def applyTFA(self):
@@ -215,7 +229,8 @@ class TFAWidget(QtWidgets.QWidget):
                     fileFormat = 'simple_text'
 
                 self.data.saveTF(resultFileName, format=fileFormat, freqRange='ALL', register=True)
-                self.data.saveTFAstatistics(os.path.splitext(resultFileName)[0] + '_stat.tfa', self.coheTreshold, self.removeNegPhase, register=True)
+                self.data.saveTFAstatistics(os.path.splitext(resultFileName)[0] + '_stat.tfa', self.plotFileFormat, self.coheTreshold,
+                                            self.removeNegPhase, register=True)
 
     # side:  'L'  or 'R'
     def plotData(self, side='L'):

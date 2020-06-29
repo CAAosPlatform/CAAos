@@ -38,7 +38,7 @@ class autoregulation_GUI(QtWidgets.QWidget):
         toolbar.setStyleSheet(stylesheet)
         toolbar.setIconSize(QtCore.QSize(30, 30))
 
-        self.closeAct = toolbar.addAction(QtGui.QIcon(iconSetDir + 'exitToolbox.png'), 'CloseToolbox', self.closeTool)
+        self.closeAct = toolbar.addAction(QtGui.QIcon(iconSetDir + 'exitToolbox.png'), 'Close toolbox', self.closeTool)
         toolbar.addSeparator()
         self.loadJobAct = toolbar.addAction(QtGui.QIcon(iconSetDir + 'loadJob.png'), 'Load job', self.loadJob)
         self.reloadJobAct = toolbar.addAction(QtGui.QIcon(iconSetDir + 'reloadJob.png'), 'Reload job', self.reloadJob)

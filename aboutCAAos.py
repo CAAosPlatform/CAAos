@@ -17,7 +17,7 @@ class About(QtGui.QMainWindow):
         # create central widget
         self.centralwidget = QtWidgets.QWidget()
         self.setCentralWidget(self.centralwidget)
-        self.setWindowTitle("QLabel Demo")
+        self.setWindowTitle("About CAAos")
 
         # screen size and position
         self.resize(500, 600)

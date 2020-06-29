@@ -57,9 +57,6 @@ class ARIWidget(QtWidgets.QWidget):
         self.saveButton.clicked.connect(self.saveARI)
         hbox.addWidget(self.saveButton)
 
-        # Create table
-        self.resultTableLWidget = ARIresultTable()
-        self.resultTableRWidget = ARIresultTable()
         hbox.addStretch(1)
 
         # plot area
@@ -69,7 +66,6 @@ class ARIWidget(QtWidgets.QWidget):
         text.setAlignment(QtCore.Qt.AlignCenter)
         text.setFont(QtGui.QFont('SansSerif', 18, QtGui.QFont.Bold))
         vboxL.addWidget(text)
-        vboxL.addWidget(self.resultTableLWidget)
         vboxL.addWidget(self.plotAreaL)
 
         self.plotAreaR = plotArray(self.data, side='R', nCols=1)
@@ -78,7 +74,6 @@ class ARIWidget(QtWidgets.QWidget):
         text.setAlignment(QtCore.Qt.AlignCenter)
         text.setFont(QtGui.QFont('SansSerif', 18, QtGui.QFont.Bold))
         vboxR.addWidget(text)
-        vboxR.addWidget(self.resultTableRWidget)
         vboxR.addWidget(self.plotAreaR)
 
         # layout

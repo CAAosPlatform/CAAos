@@ -817,10 +817,12 @@ class patientData():
 
             if operation.tag == 'TFAsaveStat':
                 fileName = tools.getElemValueXpath(operation, xpath='fileName', valType='str')
+                plotFileFormat = tools.getElemValueXpath(operation, xpath='plotFileFormat', valType='str')
                 remNegPhase = tools.getElemValueXpath(operation, xpath='remNegPhase', valType='bool')
                 coheTreshold = tools.getElemValueXpath(operation, xpath='coheTreshold', valType='bool')
-                print('TFAsaveStat: remNegPhase=%s coheTreshold=%s fileName=%s' % (str(remNegPhase), str(coheTreshold), fileName))
-                self.saveTFAstatistics(self.dirName + fileName, coheTreshold, remNegPhase, register=False)
+                print('TFAsaveStat: remNegPhase=%s coheTreshold=%s fileName=%s  plotFileFormat=%s' % (
+                      str(remNegPhase), str(coheTreshold), plotFileFormat, fileFormat))
+                self.saveTFAstatistics(self.dirName + fileName, plotFileFormat, coheTreshold, remNegPhase, register=False)
 
             if operation.tag == 'ARI':
                 Tresponse = tools.getElemValueXpath(operation, xpath='Tresponse', valType='float')
@@ -1332,7 +1334,7 @@ class patientData():
                 Sxy_L = self.PSD_L.freqRangeExtractor.getSignal(self.PSD_L.Sxy, freqRange)
                 Syx_L = self.PSD_L.freqRangeExtractor.getSignal(self.PSD_L.Syx, freqRange)
                 signals += [freq_L, Sxx_L, Syy_L, np.real(Sxy_L), np.imag(Sxy_L), np.real(Syx_L), np.imag(Syx_L)]
-                header += 'freq (Hz);Sxx_L;Syy_L;Sxy_L (real part);Sxy_L (imag part);Syx_L (real part);Syx_L (imag part)'
+                header += 'freq (Hz);Sxx_L;Syy_L;Sxy_L (real part);Sxy_L (imag part);Syx_L (real part);Syx_L (imag part);'
             if self.hasPSDdata_R:
                 freq_R = self.PSD_R.freqRangeExtractor.getFreq(freqRange)
                 nPoints = len(freq_R)
@@ -1343,10 +1345,10 @@ class patientData():
                 # add frequency vector only if there is no left PSD data
                 if not self.hasPSDdata_L:
                     signals += [freq_R, Sxx_R, Syy_R, np.real(Sxy_R), np.imag(Sxy_R), np.real(Syx_R), np.imag(Syx_R)]
-                    header += 'freq (Hz);Sxx_R;Syy_R;Sxy_R (real part);Sxy_R (imag part);Syx_R (real part);Syx_R (imag part)'
+                    header += 'freq (Hz);Sxx_R;Syy_R;Sxy_R (real part);Sxy_R (imag part);Syx_R (real part);Syx_R (imag part);'
                 else:
                     signals += [Sxx_R, Syy_R, np.real(Sxy_R), np.imag(Sxy_R), np.real(Syx_R), np.imag(Syx_R)]
-                    header += 'Sxx_R;Syy_R;Sxy_R (real part);Sxy_R (imag part);Syx_R (real part);Syx_R (imag part)'
+                    header += 'Sxx_R;Syy_R;Sxy_R (real part);Sxy_R (imag part);Syx_R (real part);Syx_R (imag part);'
 
             if format.lower() == 'csv':
                 outputFile = tools.setFileExtension(filePath, '.csv', case='lower')
@@ -1490,7 +1492,12 @@ class patientData():
 
         print('Ok!')
 
-    def saveTFAstatistics(self, filePath, coheTreshold=False, remNegPhase=False, register=True):
+    def saveTFAstatistics(self, filePath, plotFileFormat, coheTreshold=False, remNegPhase=False, register=True):
+        # plotFileFormat: valid formats:
+
+        if plotFileFormat.lower() not in ['png','jpg','tif','pdf','svg','eps','ps']:
+            print('TFA Plot file format \'%s\' not recognized. Exiting...' % plotFileFormat)
+            exit()
 
         if (not self.hasTFdata_L) and (not self.hasTFdata_R):
             print('No transfer function data was found. Canceling save...')
@@ -1507,15 +1514,16 @@ class patientData():
                 self.TFA_R.saveStatistics(outputFile, 'R', coheTreshold, remNegPhase,'w')
 
         if self.hasTFdata_L:
-            self.TFA_L.savePlot(fileNamePrefix=os.path.splitext(filePath)[0] + '_Left', fileType='png', coheTreshold=coheTreshold,
+            self.TFA_L.savePlot(fileNamePrefix=os.path.splitext(filePath)[0] + '_Left', fileType=plotFileFormat.lower(), coheTreshold=coheTreshold,
                                 remNegPhase=remNegPhase, figDpi=250, fontSize=6)
         if self.hasTFdata_R:
-            self.TFA_R.savePlot(fileNamePrefix=os.path.splitext(filePath)[0] + '_Right', fileType='png', coheTreshold=coheTreshold,
+            self.TFA_R.savePlot(fileNamePrefix=os.path.splitext(filePath)[0] + '_Right', fileType=plotFileFormat.lower(), coheTreshold=coheTreshold,
                                 remNegPhase=remNegPhase, figDpi=250, fontSize=6)
 
         if register:
             xmlElement = ETree.Element('TFAsaveStat')
             tools.ETaddElement(parent=xmlElement, tag='fileName', text=os.path.basename(filePath))
+            tools.ETaddElement(parent=xmlElement, tag='plotFileFormat', text=os.path.basename(plotFileFormat))
             tools.ETaddElement(parent=xmlElement, tag='remNegPhase', text=str(remNegPhase))
             tools.ETaddElement(parent=xmlElement, tag='coheTreshold', text=str(coheTreshold))
             self.ARoperationsNode.append(xmlElement)
