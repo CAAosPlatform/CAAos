@@ -87,6 +87,7 @@ class transferFunctionAnalysis():
                 fileObj.write('PHASE_DEG_STD=%f\n' % (phas_std * 180 / np.pi))
                 fileObj.write('COHE_AVG=%f\n' % cohe_avg)
                 fileObj.write('COHE_STD=%f\n' % cohe_std)
+            fileObj.write('============================================\n')
 
         print('Ok!')
 

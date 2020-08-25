@@ -821,7 +821,7 @@ class patientData():
                 remNegPhase = tools.getElemValueXpath(operation, xpath='remNegPhase', valType='bool')
                 coheTreshold = tools.getElemValueXpath(operation, xpath='coheTreshold', valType='bool')
                 print('TFAsaveStat: remNegPhase=%s coheTreshold=%s fileName=%s  plotFileFormat=%s' % (
-                      str(remNegPhase), str(coheTreshold), plotFileFormat, fileFormat))
+                      str(remNegPhase), str(coheTreshold), fileName, plotFileFormat))
                 self.saveTFAstatistics(self.dirName + fileName, plotFileFormat, coheTreshold, remNegPhase, register=False)
 
             if operation.tag == 'ARI':
@@ -1506,7 +1506,7 @@ class patientData():
         outputFile = tools.setFileExtension(filePath, '.tfa', case='lower')
         if self.hasTFdata_L and self.hasTFdata_R:
             self.TFA_L.saveStatistics(outputFile, 'L', coheTreshold, remNegPhase,'w')
-            self.TFA_R.saveStatistics(outputFile, 'R', coheTreshold, remNegPhase,'w')
+            self.TFA_R.saveStatistics(outputFile, 'R', coheTreshold, remNegPhase,'a')
         else:
             if self.hasTFdata_L:
                 self.TFA_L.saveStatistics(outputFile, 'L', coheTreshold, remNegPhase,'w')
@@ -1631,12 +1631,16 @@ if __name__ == '__main__':
 
     print(patientData.getVersion())
 
-    if True:
+    if False:
         file = '../data/CG24HG.EXP'
     else:
-        file = '../data/CG24HG.job'
+        file = '../data/CG24HG_AR.job'
 
-    x = patientData(file, activeModule='preprocessing')
+    x = patientData(file, activeModule='ARanalysis')
+
+
+
+    [medias_G_L,_,_,_] = x.TFA_L.getGainStatistics(freqRange='LF', coheTreshold=True)
     print(x.listChannels('label'))
     print(x.findChannel('label', 'Analog_2'))
 
