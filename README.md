@@ -2,7 +2,7 @@
 Welcome to the official repository of CAAos Platform (Cerebral Autoregulation Assessment Open Source Platform)!
 
 <p align="center">
-<img src="docs/source/images/CAAos_logo.png" width="600">
+<img src="docs/source/images/logo_800x591.png" width="600">
 </p>
 
 
