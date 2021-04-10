@@ -107,7 +107,11 @@ class transferFunctionAnalysis():
     # significanceAlpha: string. one of the following:  '1%', '5%', '10%'
     def applyCohTreshold(self, signal, significanceAlpha='5%'):
         temp = copy.deepcopy(signal)
-        criticalValue = ARsetup.cohThresholdDict[significanceAlpha][self.nSegments]
+
+        if self.nSegments > 15:
+            criticalValue = ARsetup.cohThresholdDict[significanceAlpha][15]
+        else:
+            criticalValue = ARsetup.cohThresholdDict[significanceAlpha][self.nSegments]
         temp[self.coherence < criticalValue] = np.nan
         return temp
 
@@ -145,7 +149,7 @@ class transferFunctionAnalysis():
 
         # remove negative phases
         if remNegPhase:
-            values[(values < 0) & (self.freq < 0.1)] = np.nan
+            values[np.less(values, 0, where=np.isfinite(values)) & (self.freq < 0.1)] = np.nan
 
         return self.freqRangeExtractor.getSignal(values, freqRange)
 
@@ -168,7 +172,7 @@ class transferFunctionAnalysis():
 
         # remove negative phases
         if remNegPhase:
-            values[(values < 0) & (self.freq < 0.1)] = np.nan
+            values[np.less(values, 0, where=np.isfinite(values)) & (self.freq < 0.1)] = np.nan
 
         return self.freqRangeExtractor.getStatistics(values, freqRange)
 
