@@ -119,7 +119,7 @@ class GuiMain(QtWidgets.QMainWindow):
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
-    # print(PyQt5.QtWidgets.QStyleFactory.keys())
+    #print(QtWidgets.QStyleFactory.keys())
 
     if platform.system() == 'Windows':
         # windows: ['windowsvista', 'Windows', 'Fusion']

@@ -58,7 +58,7 @@ class About(QtGui.QMainWindow):
         authors.setReadOnly(True)
 
         # license information text
-        license = QtWidgets.QPlainTextEdit(open('LICENSE', 'r').read())
+        license = QtWidgets.QPlainTextEdit(open('../LICENSE', 'r').read())
         license.setReadOnly(True)
 
         # credits

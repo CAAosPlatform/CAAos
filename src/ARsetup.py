@@ -23,7 +23,7 @@ cohCriticalValues_alpha_10percent = {3: 0.65,  4: 0.54,  5: 0.46,  6: 0.40,
 # coh critical values as a function of the significance level Alpha=0.01,0.05 and 0.1
 cohThresholdDict = {'1%': cohCriticalValues_alpha_1percent, '5%': cohCriticalValues_alpha_5percent, '10%': cohCriticalValues_alpha_10percent}
 
-ARIparamDict = {0: {'T': 2.00, 'D': 0.00, 'K': 0.00},
+ARIparamDict = {0: {'T': 5.00, 'D': 0.00, 'K': 0.00},
                 1: {'T': 2.00, 'D': 1.60, 'K': 0.20},
                 2: {'T': 2.00, 'D': 1.50, 'K': 0.40},
                 3: {'T': 2.00, 'D': 1.15, 'K': 0.60},

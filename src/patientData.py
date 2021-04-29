@@ -821,13 +821,12 @@ class patientData():
                 remNegPhase = tools.getElemValueXpath(operation, xpath='remNegPhase', valType='bool')
                 coheTreshold = tools.getElemValueXpath(operation, xpath='coheTreshold', valType='bool')
                 print('TFAsaveStat: remNegPhase=%s coheTreshold=%s fileName=%s  plotFileFormat=%s' % (
-                      str(remNegPhase), str(coheTreshold), fileName, plotFileFormat))
+                    str(remNegPhase), str(coheTreshold), fileName, plotFileFormat))
                 self.saveTFAstatistics(self.dirName + fileName, plotFileFormat, coheTreshold, remNegPhase, register=False)
 
             if operation.tag == 'ARI':
-                Tresponse = tools.getElemValueXpath(operation, xpath='Tresponse', valType='float')
-                print('ARI: Tresponse=%f' % Tresponse)
-                self.computeARI(Tresponse, register=False)
+                print('ARI:')
+                self.computeARI(register=False)
 
             if operation.tag == 'ARIsave':
                 fileName = tools.getElemValueXpath(operation, xpath='fileName', valType='str')
@@ -1370,8 +1369,9 @@ class patientData():
                 if self.hasPSDdata_R:
                     data.append(('R', freq_R, Sxx_R, Syy_R, Sxy_R, Syx_R))
 
-                dt = np.dtype([('side', 'U1'), ('freq_(Hz)', np.float64, (nPoints,)), ('Sxx', np.float64, (nPoints,)),
-                               ('Syy', np.float64, (nPoints,)), ('Sxy', np.complex128, (nPoints,)), ('Syx', np.complex128, (nPoints,))])
+                dt = np.dtype(
+                  [('side', 'U1'), ('freq_(Hz)', np.float64, (nPoints,)), ('Sxx', np.float64, (nPoints,)), ('Syy', np.float64, (nPoints,)),
+                   ('Sxy', np.complex128, (nPoints,)), ('Syx', np.complex128, (nPoints,))])
 
                 x = np.array(data, dtype=dt)
                 np.save(outputFile, x)
@@ -1477,8 +1477,9 @@ class patientData():
                 if self.hasTFdata_L:
                     data.append(('R', freq_R, H_R, Gain_R, Phase_deg_R, Coherence_R))
 
-                dt = np.dtype([('side', 'U1'),('freq_(Hz)', np.float64, (nPoints,)), ('H', np.complex128, (nPoints,)),
-                               ('gain', np.float64, (nPoints,)), ('phase_(deg)', np.float64, (nPoints,)), ('coherence', np.float64, (nPoints,)) ])
+                dt = np.dtype(
+                  [('side', 'U1'), ('freq_(Hz)', np.float64, (nPoints,)), ('H', np.complex128, (nPoints,)), ('gain', np.float64, (nPoints,)),
+                   ('phase_(deg)', np.float64, (nPoints,)), ('coherence', np.float64, (nPoints,))])
 
                 x = np.array(data, dtype=dt)
                 np.save(outputFile, x)
@@ -1495,7 +1496,7 @@ class patientData():
     def saveTFAstatistics(self, filePath, plotFileFormat, coheTreshold=False, remNegPhase=False, register=True):
         # plotFileFormat: valid formats:
 
-        if plotFileFormat.lower() not in ['png','jpg','tif','pdf','svg','eps','ps']:
+        if plotFileFormat.lower() not in ['png', 'jpg', 'tif', 'pdf', 'svg', 'eps', 'ps']:
             print('TFA Plot file format \'%s\' not recognized. Exiting...' % plotFileFormat)
             exit()
 
@@ -1505,13 +1506,13 @@ class patientData():
 
         outputFile = tools.setFileExtension(filePath, '.tfa', case='lower')
         if self.hasTFdata_L and self.hasTFdata_R:
-            self.TFA_L.saveStatistics(outputFile, 'L', coheTreshold, remNegPhase,'w')
-            self.TFA_R.saveStatistics(outputFile, 'R', coheTreshold, remNegPhase,'a')
+            self.TFA_L.saveStatistics(outputFile, 'L', coheTreshold, remNegPhase, 'w')
+            self.TFA_R.saveStatistics(outputFile, 'R', coheTreshold, remNegPhase, 'a')
         else:
             if self.hasTFdata_L:
-                self.TFA_L.saveStatistics(outputFile, 'L', coheTreshold, remNegPhase,'w')
+                self.TFA_L.saveStatistics(outputFile, 'L', coheTreshold, remNegPhase, 'w')
             if self.hasTFdata_R:
-                self.TFA_R.saveStatistics(outputFile, 'R', coheTreshold, remNegPhase,'w')
+                self.TFA_R.saveStatistics(outputFile, 'R', coheTreshold, remNegPhase, 'w')
 
         if self.hasTFdata_L:
             self.TFA_L.savePlot(fileNamePrefix=os.path.splitext(filePath)[0] + '_Left', fileType=plotFileFormat.lower(), coheTreshold=coheTreshold,
@@ -1528,29 +1529,24 @@ class patientData():
             tools.ETaddElement(parent=xmlElement, tag='coheTreshold', text=str(coheTreshold))
             self.ARoperationsNode.append(xmlElement)
 
-    def computeARI(self, Tresponse=6.0, register=True):
+    def computeARI(self, register=True):
 
         if self.hasTFdata_L:
             self.ARI_L = ARIanalysis(self.TFA_L.H, self.TFA_L.welch.Ts)
-            self.ARI_L.computePatientImpulseResponse(Tresponse)
-            self.ARI_L.computeARI()
             self.hasARIdata_L = True
 
         if self.hasTFdata_R:
             self.ARI_R = ARIanalysis(self.TFA_R.H, self.TFA_R.welch.Ts)
-            self.ARI_R.computePatientImpulseResponse(Tresponse)
-            self.ARI_R.computeARI()
             self.hasARIdata_R = True
 
         if register:
             xmlElement = ETree.Element('ARI')
-            tools.ETaddElement(parent=xmlElement, tag='Tresponse', text=str(Tresponse))
             self.ARoperationsNode.append(xmlElement)
 
     def saveARI(self, filePath, format='csv', register=True):
 
         if (not self.hasARIdata_L) and (not self.hasARIdata_R):
-            print('No transfer function data was found. Canceling save...')
+            print('No ARI data was found. Canceling save...')
             return
 
         if format.lower() == 'simple_text':
@@ -1568,29 +1564,28 @@ class patientData():
             signals = []
             header = ''
             if self.hasARIdata_L:
-                nPoints = self.ARI_L.nPoints
-                responseTime = self.ARI_L.timeVals[-1]
-                signals += [self.ARI_L.timeVals, self.ARI_L.impulseResponse, self.ARI_L.ARIbestFit]
+                nPoints = self.ARI_L.nDuration
+                signals += [self.ARI_L.timeVals, self.ARI_L.stepResponse, self.ARI_L.ARIbestFit]
                 header += 'time (s);impulse_response_L;best_fit_curve_L;'
             if self.hasARIdata_R:
-                nPoints = self.ARI_R.nPoints
-                responseTime = self.ARI_R.timeVals[-1]
+                nPoints = self.ARI_R.nDuration
                 # add frequency vector only if there is no left PSD data
                 if not self.hasARIdata_L:
-                    signals += [self.ARI_R.timeVals, self.ARI_R.impulseResponse, self.ARI_R.ARIbestFit]
+                    signals += [self.ARI_R.timeVals, self.ARI_R.stepResponse, self.ARI_R.ARIbestFit]
                     header += 'time (s);impulse_response_R;best_fit_curve_R;'
                 else:
-                    signals += [ self.ARI_R.impulseResponse, self.ARI_R.ARIbestFit]
+                    signals += [self.ARI_R.stepResponse, self.ARI_R.ARIbestFit]
                     header += 'impulse_response_R;best_fit_curve_R;'
 
             if format.lower() == 'csv':
                 outputFile = tools.setFileExtension(filePath, '.csv', case='lower')
                 with open(outputFile, 'w') as fOut:
-                    fOut.write('RESPONSE_TIME_(s);%f\n' % responseTime)
                     if self.hasARIdata_L:
-                        fOut.write('ARI_BEST_FIT_L;%f\n' % self.ARI_L.ARIidx)
+                        fOut.write('ARI_INT_BEST_FIT_L;%d\n' % self.ARI_L.ARI_int)
+                        fOut.write('ARI_FRAC_BEST_FIT_L;%f\n' % self.ARI_L.ARI_frac)
                     if self.hasARIdata_R:
-                        fOut.write('ARI_BEST_FIT_R;%f\n' % self.ARI_R.ARIidx)
+                        fOut.write('ARI_INT_BEST_FIT_R;%d\n' % self.ARI_R.ARI_int)
+                        fOut.write('ARI_FRAC_BEST_FIT_R;%f\n' % self.ARI_R.ARI_frac)
                     fOut.write('N_POINTS;%d\n' % nPoints)
                     fOut.write('-------DATA START-------;\n')
                     fOut.write(header + '\n')
@@ -1604,13 +1599,12 @@ class patientData():
                 # build a structured array
                 data = []
                 if self.hasARIdata_L:
-                    data.append(('L', responseTime, self.ARI_L.ARIidx, self.ARI_L.timeVals, self.ARI_L.impulseResponse, self.ARI_L.ARIbestFit))
-                if self.hasARIdata_L:
-                    data.append(('R', responseTime, self.ARI_R.ARIidx, self.ARI_R.timeVals, self.ARI_R.impulseResponse, self.ARI_R.ARIbestFit))
+                    data.append(('L', self.ARI_L.ARI_int, self.ARI_L.ARI_frac, self.ARI_L.timeVals, self.ARI_L.stepResponse, self.ARI_L.ARIbestFit))
+                if self.hasARIdata_R:
+                    data.append(('R', self.ARI_R.ARI_int, self.ARI_L.ARI_frac, self.ARI_R.timeVals, self.ARI_R.stepResponse, self.ARI_R.ARIbestFit))
 
-                dt = np.dtype([('side', 'U1'),('response_time_(s)', np.float64), ('ARI_index', np.int8),
-                               ('time_(s)', np.float64, (nPoints,)), ('impulse_response', np.float64, (nPoints,)), ('ari_best_fit', np.float64,
-                                                                                                                     (nPoints,)) ])
+                dt = np.dtype([('side', 'U1'), ('ARI_int', np.int8), ('ARI_frac', np.float64), ('time_(s)', np.float64, (nPoints,)),
+                               ('impulse_response', np.float64, (nPoints,)), ('ari_best_fit', np.float64, (nPoints,))])
 
                 x = np.array(data, dtype=dt)
                 np.save(outputFile, x)
@@ -1622,6 +1616,7 @@ class patientData():
             self.ARoperationsNode.append(xmlElement)
 
         print('Ok!')
+
 
 if __name__ == '__main__':
 
@@ -1638,9 +1633,7 @@ if __name__ == '__main__':
 
     x = patientData(file, activeModule='ARanalysis')
 
-
-
-    [medias_G_L,_,_,_] = x.TFA_L.getGainStatistics(freqRange='LF', coheTreshold=True)
+    [medias_G_L, _, _, _] = x.TFA_L.getGainStatistics(freqRange='LF', coheTreshold=True)
     print(x.listChannels('label'))
     print(x.findChannel('label', 'Analog_2'))
 

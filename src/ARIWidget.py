@@ -122,7 +122,7 @@ class ARIWidget(QtWidgets.QWidget):
 
     # synchronize signals
     def applyARI(self):
-        self.data.computeARI(Tresponse=self.responseTime)
+        self.data.computeARI()
         self.applyARIButton.clearFocus()
         self.saveButton.setEnabled(True)
 
@@ -167,13 +167,13 @@ class ARIWidget(QtWidgets.QWidget):
 
         # create plots
         plotArea.clearAll()
-        plotArea.addNewPlot(yData=[[ARI_data.impulseResponse, pyQtConf['plotColors']['red'], 'Patient'],
-                                   [ARI_data.ARIbestFit, pyQtConf['plotColors']['blue'], 'ARI=%d (best fit)' % ARI_data.ARIidx]],
-                            yUnit='Velocity (cm/s)', title='Impulse Response', logY=False, legend=True)
+        plotArea.addNewPlot(yData=[[ARI_data.stepResponse, pyQtConf['plotColors']['red'], 'Patient'],
+                                   [ARI_data.ARIbestFit, pyQtConf['plotColors']['blue'], 'ARI=%d (%.3f) (best fit)' % (ARI_data.ARI_int,ARI_data.ARI_frac)]],
+                            yUnit='Velocity (cm/s)', title='', logY=False, legend=True)
 
         # set limits
         maxImp = np.amax(ARI_data.impulseResponse)
         minImp = np.amin(ARI_data.impulseResponse)
         maxTiek = np.amax(ARI_data.ARIbestFit)
-        mintiek = np.amin(ARI_data.ARIbestFit)
-        plotArea.setLimits(xlim=[0, ARI_data.Tresponse], ylim=[[min(minImp, mintiek), max(maxImp, maxTiek)]])
+        minTiek = np.amin(ARI_data.ARIbestFit)
+        plotArea.setLimits(xlim=[0, ARI_data.timeVals[-1]], ylim=[[min(minImp, minTiek), max(maxImp, maxTiek)]])

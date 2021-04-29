@@ -20,7 +20,7 @@ if darkTheme:
 else:
     pyQtConf = {'backgroundColor': 'w', 'foregroundColor': 'k', 'textColor': (0, 0, 0),
                 'plotColors': {'red': (255, 0, 0), 'green': (120, 255, 90), 'blue': (0, 100, 200), 'base': (0, 0, 0)},
-                'linearRegionBrush': pg.mkBrush((50, 50, 50, 50)), 'linearRegionPen': pg.mkPen(color=(255, 0, 0, 255)), 'plotLineWidth': 1.0,
+                'linearRegionBrush': pg.mkBrush((50, 50, 50, 50)), 'linearRegionPen': pg.mkPen(color=(255, 0, 0, 255)), 'plotLineWidth': 2.0,
                 'peakMarkSymbol': 'o', 'peakMarkSize': 5, 'peakMarkColor': (255, 0, 0)}
 
 if pyQtConf['plotLineWidth'] == 1.0:

@@ -187,7 +187,7 @@ class transferFunctionAnalysis():
             # dashed line
             ax[0].plot(self.getFreq('FULL'), self.getGain('FULL'), c='k', linewidth=1, linestyle=(0, (5, 5)), label='_nolegend_')
 
-        ax[0].plot(self.getFreq('FULL'), self.getGain('FULL', coheTreshold=coheTreshold), c='k', linewidth=1.2, marker='o', markerSize=2.5)
+        ax[0].plot(self.getFreq('FULL'), self.getGain('FULL', coheTreshold=coheTreshold), c='k', linewidth=1.2, marker='o', markersize=2.5)
 
         # ax[0].semilogy(self.getFreq('FULL'),abs(self.Syx), c='k',linewidth=1,label='_nolegend_')
         # ax[0].semilogy(self.getFreq('FULL'),abs(self.Sxy), c='b',linewidth=1,label='_nolegend_')
@@ -206,7 +206,7 @@ class transferFunctionAnalysis():
             ax[0].hlines(mean, ARsetup.freqRangeDic[fRange][0], ARsetup.freqRangeDic[fRange][1], linestyle='dashed', color='red', linewidth=0.7)
             ax[0].axvspan(ARsetup.freqRangeDic[fRange][0], ARsetup.freqRangeDic[fRange][1], facecolor=freqRangeColors[i], alpha=1.0)
             ax[0].text(ARsetup.freqRangeDic[fRange][0], deltaY * 0.03 + mean, '$\mu=${0:.2f}'.format(mean) + '\n' + '$ \sigma=${0:.2f}'.format(std),
-                       color='r', fontSize=fontSize)
+                       color='r', fontsize=fontSize)
 
         # ---------------------
         # Phase Plot
@@ -215,7 +215,7 @@ class transferFunctionAnalysis():
             # dashed line
             ax[1].plot(self.getFreq('FULL'), self.getPhase('FULL') * 180 / np.pi, c='k', linewidth=1, linestyle=(0, (5, 5)), label='_nolegend_')
         ax[1].plot(self.getFreq('FULL'), self.getPhase('FULL', coheTreshold, remNegPhase) * 180 / np.pi, c='k', linewidth=1.2, marker='o',
-                   markerSize=2.5)
+                   markersize=2.5)
 
         ax[1].set_ylabel('Phase [ degree ]')
         # ax[1].set_xlim([0,ARsetup.freqRangeDic['HF'][1]])
@@ -232,12 +232,12 @@ class transferFunctionAnalysis():
             ax[1].hlines(mean, ARsetup.freqRangeDic[fRange][0], ARsetup.freqRangeDic[fRange][1], linestyle='dashed', color='red', linewidth=0.7)
             ax[1].axvspan(ARsetup.freqRangeDic[fRange][0], ARsetup.freqRangeDic[fRange][1], facecolor=freqRangeColors[i], alpha=1.0)
             ax[1].text(ARsetup.freqRangeDic[fRange][0], deltaY * 0.03 + mean, '$\mu=${0:.2f}'.format(mean) + '\n' + '$ \sigma=${0:.2f}'.format(std),
-                       color='r', fontSize=fontSize)
+                       color='r', fontsize=fontSize)
 
         # ---------------------
         # Coherence
         # ---------------------
-        ax[2].plot(self.getFreq('FULL'), self.getCoherence('FULL'), c='k', linewidth=1.2, marker='o', markerSize=2.5)
+        ax[2].plot(self.getFreq('FULL'), self.getCoherence('FULL'), c='k', linewidth=1.2, marker='o', markersize=2.5)
         ax[2].set_ylabel('Coherence [ adim. ]')
         ax[2].set_xlabel('Frequency (Hz)')
         # ax[2].set_xlim([0,ARsetup.freqRangeDic['HF'][1]])
@@ -252,7 +252,7 @@ class transferFunctionAnalysis():
             ax[2].hlines(mean, ARsetup.freqRangeDic[fRange][0], ARsetup.freqRangeDic[fRange][1], linestyle='dashed', color='red', linewidth=0.7)
             ax[2].axvspan(ARsetup.freqRangeDic[fRange][0], ARsetup.freqRangeDic[fRange][1], facecolor=freqRangeColors[i], alpha=1.0)
             ax[2].text(ARsetup.freqRangeDic[fRange][0], deltaY * 0.03 + mean, '$\mu=${0:.2f}'.format(mean) + '\n' + '$ \sigma=${0:.2f}'.format(std),
-                       color='r', fontSize=fontSize)
+                       color='r', fontsize=fontSize)
 
         # threshold grey region
         if coheTreshold:
