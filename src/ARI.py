@@ -2,6 +2,7 @@
 
 # -*- coding: utf-8 -*-
 import sys
+import glob
 
 if sys.version_info.major == 2:
     sys.stdout.write('Sorry! This program requires Python 3.x\n')
@@ -249,7 +250,10 @@ class ARIanalysis():
         # adds NsamplesBeforeImpuse samples=0.0 to the beginning
         stepResponse = np.concatenate([np.zeros(self.NsamplesBeforeImpuse), stepResponse])
 
-        # plota1(stepResponse, 'step response')
+        # escala resultado
+        stepResponse *= 0.1
+
+        #plota1(stepResponse, 'step response')
 
         return stepResponse
 
@@ -285,7 +289,7 @@ class ARIanalysis():
         # this criteria was created by Panerai.
         if np.mean(VstepResponse[:int(self.nDuration/2)]) < 0 or np.mean(VstepResponse[:20]) < 0:
             print('Error: Negative CBFv mean. Exiting')
-            return [None, None]
+            return [None, None, None]
 
         [TiecksVresponse,TiecksError] = self.calcTiecksModel(Pstep, VstepResponse, self.nDuration, resampleFactor)
 
@@ -305,8 +309,17 @@ class ARIanalysis():
         [c,b,a] = np.polynomial.polynomial.polyfit([ARI_temp - 1, ARI_temp, ARI_temp + 1],
                                                     [TiecksError[ARI_temp - 1], TiecksError[ARI_temp], TiecksError[ARI_temp + 1]], deg=2)
 
-        #ARI is the x coordinate of the vertex of the parabola ARI=-b/(2a)
-        ARI_frac = -b/(2*a)
+        if a < 0:
+            #ARI is the x coordinate of the vertex of the parabola ARI=-b/(2a)
+            ARI_frac = -b/(2*a)
+
+            if ARI_frac < 0:
+                ARI_frac = 0
+            if ARI_frac > 9:
+                ARI_frac = 9
+        else:
+            ARI_frac = ARI_int
+
         print("fractionary ARI: %f" % ARI_frac)
 
         # REVERSE EXPANSION BY DECIMATION
@@ -330,6 +343,8 @@ class ARIanalysis():
         PstepResampled= PstepResampled[:resampleFactor*nDuration]
         VstepResponseResampled= VstepResponseResampled[:resampleFactor*nDuration]
         FsResampled = resampleFactor * (1.0 / self.Ts)
+
+
         # --------------------
         # tiecks model
         # --------------------
@@ -338,6 +353,8 @@ class ARIanalysis():
         PmeanControl = Pstep[0]  #average pressure before the step is constant. therefore the average equals the first sample
         Pnorm = (PstepResampled - PmeanControl) / (PmeanControl - CRCP)  # Dp0=0
         nDuration_Resampled = PstepResampled.shape[0]
+
+        #plota2(VstepResponseResampled, Pnorm, title='caoos')
 
         TiecksVresponse = np.zeros([10, nDuration_Resampled])
         TiecksError = np.zeros(10)
@@ -358,7 +375,7 @@ class ARIanalysis():
             x2[np.abs(x2) > 1e6] = 0.0
 
             # generate velocity model response
-            TiecksVresponse[ariIdx] = np.mean(VstepResponse[:nDuration]) * (1.0 + Pnorm - K * x2)
+            TiecksVresponse[ariIdx] = abs(np.mean(VstepResponse[:nDuration])) * (1.0 + Pnorm - K * x2)
             TiecksVresponse[ariIdx][0] = TiecksVresponse[ariIdx][4]
 
             # exponencial moving average
@@ -367,21 +384,32 @@ class ARIanalysis():
 
             # normalize tiecks model to fit vResponse amplitude
             lengthWindow = 50 + 10  # 2 seconds + 10 samples  # following Panerai's method
-            Vmax = max(0.001, np.amax(VstepResponseResampled[0:lengthWindow]))
+            Vmax = np.amax(VstepResponseResampled[0:lengthWindow])
+
+            if Vmax == 0.0: # panerai's check
+                Vmax = 0.001
+
             idxVmax = np.where(VstepResponseResampled[0:lengthWindow] == Vmax)[0][0]
 
-            xDen = max(0.001, TiecksVresponse[ariIdx][idxVmax] - TiecksVresponse[ariIdx][0])  # following Panerai's method
+            xDen = TiecksVresponse[ariIdx][idxVmax] - TiecksVresponse[ariIdx][0]  # following Panerai's method
+
+            if xDen == 0.0: # panerai's check
+                xDen = 0.001
 
             a = (Vmax - VstepResponseResampled[0]) / xDen
             b = Vmax - a * TiecksVresponse[ariIdx][idxVmax]
 
             TiecksVresponse[ariIdx] = a * TiecksVresponse[ariIdx] + b
+            #plota2(VstepResponseResampled, TiecksVresponse[ariIdx], title='caoos')
 
             # mean square error between vResponse and Vresponse from Tiecks (resampled signals)
             error = np.sqrt(np.square(VstepResponseResampled - TiecksVresponse[ariIdx]).mean())
 
             # normalized error
-            TiecksError[ariIdx] = max(0.01, error / Vmax)  # following Panerai's method
+            TiecksError[ariIdx] = error / Vmax  # following Panerai's method
+
+            if TiecksError[ariIdx] == 0.0: # panerai's check
+                TiecksError[ariIdx] = 0.01
 
             # invert the error.
             TiecksError[ariIdx] = 1/TiecksError[ariIdx]
@@ -406,27 +434,58 @@ class ARIanalysis():
 
 if __name__ == '__main__':
     # read data from Panerai
-    datax = np.loadtxt('../../codigoRenata/arquivosCSV/DPOC04CA_FR2.csv', skiprows=1, delimiter=',')
-    samplingFreq_Hz = 5
 
-    gain = np.array(datax[:, 5])
-    phase = np.array(datax[:, 8])
+    runAll = True
+    if runAll:
+        with open('ARIresults_NEW.txt','w') as f:
+            for file in glob.glob('../../codigoRenata/arquivosCSV/*.csv'):
+                datax = np.loadtxt(file, skiprows=1, delimiter=',')
+                samplingFreq_Hz = 5
 
-    # Duplicates input. Panerai's code stores only the first half of the spectrum. Since Nyquist is lost. I am copying the pevious value as Nyquist
-    gain = np.concatenate([gain, np.array([gain[-1]]), np.flip(gain[1:])])
-    phase = np.concatenate([phase, np.array([phase[-1]]), -np.flip(phase[1:])])
+                gain = np.array(datax[:, 5])
+                phase = np.array(datax[:, 8])
 
-    #plota2(gain, phase, 'Ganho e Fase - duplicados', ylabel1='Ganho', yLabel2='Fase')
+                # Duplicates input. Panerai's code stores only the first half of the spectrum. Since Nyquist is lost. I am copying the pevious value as Nyquist
+                gain = np.concatenate([gain, np.array([gain[-1]]), np.flip(gain[1:])])
+                phase = np.concatenate([phase, np.array([phase[-1]]), -np.flip(phase[1:])])
 
-    # compose transfer function
-    angUnit = 'rad'
-    if angUnit == 'deg':
-        phase *= np.pi / 180.0;
+                #plota2(gain, phase, 'Ganho e Fase - duplicados', ylabel1='Ganho', yLabel2='Fase')
 
-    # build transfer function from amplitude and phase
-    TF = gain * np.exp(1j * phase)
+                # compose transfer function
+                angUnit = 'rad'
+                if angUnit == 'deg':
+                    phase *= np.pi / 180.0;
 
-    # run ARI
-    ARIanalysis = ARIanalysis(TF, 1.0 / samplingFreq_Hz)
-    ARIanalysis.save('temp.ari', sideLabel='L', writeMode='w')
+                # build transfer function from amplitude and phase
+                TF = gain * np.exp(1j * phase)
 
+                # run ARI
+                myARI = ARIanalysis(TF, 1.0 / samplingFreq_Hz)
+                #print("ARI: %d %f" % ( myARI.ARI_int, myARI.ARI_frac))
+                #ARIanalysis.save('temp.ari', sideLabel='L', writeMode='w')
+                f.write('%s; %f\n' %(file,myARI.ARI_frac))
+    else:
+        file = '../../codigoRenata/arquivosCSV/VOL05CA1_FR2.csv'
+        datax = np.loadtxt(file, skiprows=1, delimiter=',')
+        samplingFreq_Hz = 5
+
+        gain = np.array(datax[:, 5])
+        phase = np.array(datax[:, 8])
+
+        # Duplicates input. Panerai's code stores only the first half of the spectrum. Since Nyquist is lost. I am copying the pevious value as Nyquist
+        gain = np.concatenate([gain, np.array([gain[-1]]), np.flip(gain[1:])])
+        phase = np.concatenate([phase, np.array([phase[-1]]), -np.flip(phase[1:])])
+
+        # plota2(gain, phase, 'Ganho e Fase - duplicados', ylabel1='Ganho', yLabel2='Fase')
+
+        # compose transfer function
+        angUnit = 'rad'
+        if angUnit == 'deg':
+            phase *= np.pi / 180.0;
+
+        # build transfer function from amplitude and phase
+        TF = gain * np.exp(1j * phase)
+
+        # run ARI
+        myARI = ARIanalysis(TF, 1.0 / samplingFreq_Hz)
+        #print("ARI: %d %f" % (myARI.ARI_int, myARI.ARI_frac))  # ARIanalysis.save('temp.ari', sideLabel='L', writeMode='w')
