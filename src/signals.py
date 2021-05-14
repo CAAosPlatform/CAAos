@@ -74,8 +74,17 @@ class signal():
 
         # register operation
         if register:
-            xmlElement = ETree.Element('setlabel')
+            xmlElement = ETree.Element('setLabel')
             tools.ETaddElement(parent=xmlElement, tag='label', text=newLabel)
+            self.registerOperation(xmlElement)
+
+    def setUnit(self, newUnit, register=True):
+        self.unit = newUnit
+
+        # register operation
+        if register:
+            xmlElement = ETree.Element('setUnit')
+            tools.ETaddElement(parent=xmlElement, tag='unit', text=newUnit)
             self.registerOperation(xmlElement)
 
     def setType(self, newType, register=True):

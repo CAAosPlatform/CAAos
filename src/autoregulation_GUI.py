@@ -68,7 +68,7 @@ class autoregulation_GUI(QtWidgets.QWidget):
             self.fileName, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Select input data file', '', 'Autoregulation jobs (*.job) (*.job)')
         else:
             print('LOAD de arquivo abreviado! ver autoregulation_GUI.py, linha 64')
-            self.fileName = '/home/fernando/servidor/programas/00_UFABC/ProjetoPosDocAngela/data/CG24HG_AR.job'
+            self.fileName = '/home/fernando/servidor/programas/00_UFABC/ProjetoPosDocAngela/data/CG21HG_AR.job'
 
         if not self.fileName:
             return

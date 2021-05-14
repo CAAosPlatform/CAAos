@@ -22,7 +22,7 @@ def diferencaPedro(numpyData, file, label, isComplex=False):
 
 def ovelapAdjustment(sizeSignal, wlength, overlap):
     nSegments = np.floor((sizeSignal - wlength) / (wlength * (1 - overlap))) + 1  # atention: in python 3.x, / is float division!
-    if nSegments > 0:
+    if nSegments > 1:
         shift = int((sizeSignal - wlength) / (nSegments - 1))  # atention: in python 3.x, / is float division!
         newOverlap = (wlength - shift) / wlength
     else:
@@ -33,15 +33,23 @@ def ovelapAdjustment(sizeSignal, wlength, overlap):
 
 
 class transferFunctionAnalysis():
-    def __init__(self, welchData):
-        self.welch = welchData
-        self.nSegments = self.welch.nSegments
-        self.freq = self.welch.freq
-        self.Sxx = self.welch.Sxx
-        self.Syy = self.welch.Syy
-        self.Sxy = self.welch.Sxy
-        self.Syx = self.welch.Syx
+    def __init__(self, PSDdata):
+        self.PSDdata = PSDdata
+        self.nSegments = self.PSDdata.nSegments
+        self.freq = self.PSDdata.freq
+        self.Sxx = self.PSDdata.Sxx
+        self.Syy = self.PSDdata.Syy
+        self.Sxy = self.PSDdata.Sxy
+        self.Syx = self.PSDdata.Syx
+
+        if self.PSDdata.unitX is not None and self.PSDdata.unitY is not None:
+            self.unitH = '(%s)/(%s)' %(self.PSDdata.unitY,self.PSDdata.unitX)
+        else:
+            self.unitH = 'unspecified unit'
+
         self.freqRangeExtractor = tools.CARfreqRange(self.freq)
+        self.CohCutoffSignificanceLevel = '5%'  # string:  '1%', '5%', '10%'
+
 
     def save(self, fileName, freqRange='ALL', sideLabel='L', writeMode='w'):
         # freqRange (string)  'VLF', 'LF', 'HF', 'ALL' (default), 'FULL'
@@ -50,6 +58,7 @@ class transferFunctionAnalysis():
             fileObj.write('ESTIMATOR_TYPE=%s\n' % self.Htype)
             fileObj.write('SIDE=%s\n' % sideLabel)
             fileObj.write('NPOINTS=%d\n' % len(self.getFreq(freqRange)))
+            fileObj.write('UNIT_H=%s\n' % self.unitH)
 
             args = dict(max_line_width=np.inf, precision=8, separator=' ', floatmode='maxprec_equal', threshold=np.inf)
             fileObj.write('FREQ_(HZ)=' + np.array2string(self.getFreq(freqRange), **args) + '\n')
@@ -70,6 +79,7 @@ class transferFunctionAnalysis():
             fileObj.write('SIDE=%s\n' % sideLabel)
             fileObj.write('COHERENCE_TRESHOLD=%s\n' % str(coheTreshold))
             fileObj.write('REMOVE_NEGATIVE_PHASE=%s\n' % str(remNegPhase))
+            fileObj.write('UNIT_H=%s\n' % self.unitH)
             for r in ['VLF', 'LF', 'HF']:
                 fileObj.write('-' * 30 + '\n')
                 fileObj.write('FREQUENCY_RANGE=%s\n' % r)
@@ -104,14 +114,14 @@ class transferFunctionAnalysis():
         self.coherence = np.divide(np.absolute(self.Sxy) ** 2, np.multiply(self.Sxx, self.Syy))
 
     # returns a copy of the signal with NaNs where coherence< limit
-    # significanceAlpha: string. one of the following:  '1%', '5%', '10%'
-    def applyCohTreshold(self, signal, significanceAlpha='5%'):
+
+    def applyCohTreshold(self, signal):
         temp = copy.deepcopy(signal)
 
         if self.nSegments > 15:
-            criticalValue = ARsetup.cohThresholdDict[significanceAlpha][15]
+            criticalValue = ARsetup.cohThresholdDict[self.CohCutoffSignificanceLevel][15]
         else:
-            criticalValue = ARsetup.cohThresholdDict[significanceAlpha][self.nSegments]
+            criticalValue = ARsetup.cohThresholdDict[self.CohCutoffSignificanceLevel][self.nSegments]
         temp[self.coherence < criticalValue] = np.nan
         return temp
 
@@ -172,7 +182,8 @@ class transferFunctionAnalysis():
 
         # remove negative phases
         if remNegPhase:
-            values[np.less(values, 0, where=np.isfinite(values)) & (self.freq < 0.1)] = np.nan
+            freqCutoff = 0.1
+            values[np.less(values, 0, where=np.isfinite(values)) & (self.freq < freqCutoff)] = np.nan
 
         return self.freqRangeExtractor.getStatistics(values, freqRange)
 
@@ -192,7 +203,7 @@ class transferFunctionAnalysis():
         # ax[0].semilogy(self.getFreq('FULL'),abs(self.Syx), c='k',linewidth=1,label='_nolegend_')
         # ax[0].semilogy(self.getFreq('FULL'),abs(self.Sxy), c='b',linewidth=1,label='_nolegend_')
         # ax[0].semilogy(self.getFreq('FULL'),abs(self.Sxx), c='r',linewidth=1,label='_nolegend_')
-        ax[0].set_ylabel('Gain [ adim. ]')
+        ax[0].set_ylabel('Gain\n[ %s ]' % self.unitH)
         # ax[0].legend(["Python"])
         ax[0].set_xlim([0, ARsetup.freqRangeDic['HF'][1]])
         ax[0].set_ylim([0, 1.05 * np.nanmax(self.getGain('ALL', coheTreshold=coheTreshold))])
@@ -217,7 +228,7 @@ class transferFunctionAnalysis():
         ax[1].plot(self.getFreq('FULL'), self.getPhase('FULL', coheTreshold, remNegPhase) * 180 / np.pi, c='k', linewidth=1.2, marker='o',
                    markersize=2.5)
 
-        ax[1].set_ylabel('Phase [ degree ]')
+        ax[1].set_ylabel('Phase\n[ degree ]')
         # ax[1].set_xlim([0,ARsetup.freqRangeDic['HF'][1]])
         ax[1].set_ylim([0, 1.05 * np.nanmax(self.getPhase('ALL', coheTreshold, remNegPhase)) * 180 / np.pi])
         ax[1].grid(axis='x')
@@ -238,8 +249,8 @@ class transferFunctionAnalysis():
         # Coherence
         # ---------------------
         ax[2].plot(self.getFreq('FULL'), self.getCoherence('FULL'), c='k', linewidth=1.2, marker='o', markersize=2.5)
-        ax[2].set_ylabel('Coherence [ adim. ]')
-        ax[2].set_xlabel('Frequency (Hz)')
+        ax[2].set_ylabel('Coherence\n[ adim. ]')
+        ax[2].set_xlabel('Frequency [ Hz ]')
         # ax[2].set_xlim([0,ARsetup.freqRangeDic['HF'][1]])
         ax[2].set_ylim([0, 1])
         ax[2].grid(axis='x')
@@ -273,30 +284,48 @@ if __name__ == '__main__':
         sys.stdout.write('Sorry! This program requires Python 3.x\n')
         sys.exit(1)
 
-    ABP = np.loadtxt('../codigoPedro/lixo_ABP.txt')
-    CBFv_L = np.loadtxt('../codigoPedro/lixo_CBF_L.txt')
-    samplingFrequency_Hz = 100
+    if False:
+        ABP = np.loadtxt('../codigoPedro/lixo_ABP.txt')
+        CBFv_L = np.loadtxt('../codigoPedro/lixo_CBF_L.txt')
+        samplingFrequency_Hz = 100
+    if True:
+        file='../../CARNet_software/tfa_sample_data_1.txt'
+        data = np.loadtxt(file, skiprows=1, delimiter='\t')
+        samplingFreq_Hz = 5
+
+        time = data[:,0]
+        ABP  = data[:,1]
+        CBFv_L = data[:,2]
+        CBFv_R = data[:,3]
+        samplingFrequency_Hz =1/np.mean(np.diff(time))
 
     overlap = 59.99 / 100  # overlap
     segmentLength_s = 102.4
-    windowType = 'hanning'
+    windowType = 'hann'
     overlap_adjust = True
     if overlap_adjust:
         overlap = ovelapAdjustment(ABP.shape[0], segmentLength_s * samplingFrequency_Hz, overlap)
 
     # Power spectrum Estimation
-    welch = PSDestimator(ABP, CBFv_L, samplingFrequency_Hz, overlap, segmentLength_s, windowType, removeBias=False)
-    welch.computeWelch()
-    welch.filterAll(filterType='rect', nTaps=2, keepFirst=True)
-    # Start TF analysis
-    TF = transferFunctionAnalysis(welchData=welch)
-    TF.computeH1()
+    for side in ['L','R']:
+        if side =='L':
+            vData = CBFv_L
+        if side =='R':
+            vData = CBFv_R
+        welch = PSDestimator(ABP, vData, samplingFrequency_Hz, overlap, segmentLength_s, windowType, detrend=False)
+        welch.computeWelch()
+        welch.filterAll(filterType='rect', nTaps=2, keepFirst=True)
+        #welch.save(fileName='lixo_PSD.txt')
+        # Start TF analysis
+        TF = transferFunctionAnalysis(PSDdata=welch)
+        TF.computeH1()
 
-    welch.save(fileName='lixo.PSD', freqRange='ALL')
-    TF.save(fileName='lixo.TF', sideLabel='R')
-    if True:
-        TF.savePlot(fileNamePrefix=None)
-    else:
-        TF.savePlot(fileNamePrefix='lixo', fileType='png', figDpi=250, fontSize=6)
-        TF.savePlot(fileNamePrefix='lixo', fileType='svg', figDpi=250, fontSize=6)
-        TF.savePlot(fileNamePrefix='lixo', fileType='pdf', figDpi=250, fontSize=6)
+        TF.saveStatistics(fileName='lixo_TF_%s_stat.TF' % side, sideLabel=side, coheTreshold=True, remNegPhase=True, writeMode='w')
+
+        #TF.save(fileName='lixo.TF', sideLabel='L', freqRange='ALL')
+        if True:
+            TF.savePlot(fileNamePrefix=None)
+        else:
+            TF.savePlot(fileNamePrefix='lixo', fileType='png', figDpi=250, fontSize=6)
+            TF.savePlot(fileNamePrefix='lixo', fileType='svg', figDpi=250, fontSize=6)
+            TF.savePlot(fileNamePrefix='lixo', fileType='pdf', figDpi=250, fontSize=6)

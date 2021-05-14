@@ -90,18 +90,30 @@ def resampleSignal(X, ResampleFctor=1):
 
 
 class ARIanalysis():
-    def __init__(self, transferFunction, samplingPeriod):
+    def __init__(self, transferFunction, samplingPeriod,unitP=None,unitV=None):
         """See notebook 3, page 40 for implementation details"""
         self.TF = transferFunction
         self.Ts = samplingPeriod
         self.Lsignal = len(self.TF)
 
         self.TF = self.filterTF(self.TF)
+
+        if unitV is not None:
+            self.unitV = unitV
+        else:
+            self.unitV = 'unspecified unit'
+
+        if unitP is not None:
+            self.unitP = unitP
+        else:
+            self.unitP = 'unspecified unit'
+
         # plotaH(self.TF, 'Ganho e Fase - considerando simetria')
         [self.impulseResponse,self.timeVals] = self.computePatientImpulseResponse()
         self.stepResponse = self.computeStepResponse()
         [self.ARI_int,self.ARI_frac,self.ARIbestFit] = self.calcARI()
-        
+
+        self.impulseResponse = self.impulseResponse[:self.nDuration]
         self.stepResponse = self.stepResponse[:self.nDuration]
         self.timeVals = self.timeVals[:self.nDuration]
 
@@ -251,7 +263,7 @@ class ARIanalysis():
         stepResponse = np.concatenate([np.zeros(self.NsamplesBeforeImpuse), stepResponse])
 
         # escala resultado
-        stepResponse *= 0.1
+        #stepResponse *= 0.1
 
         #plota1(stepResponse, 'step response')
 
@@ -292,6 +304,8 @@ class ARIanalysis():
             return [None, None, None]
 
         [TiecksVresponse,TiecksError] = self.calcTiecksModel(Pstep, VstepResponse, self.nDuration, resampleFactor)
+
+        self.TiecksErrors = np.reciprocal(TiecksError)
 
         # Find integer ARI from error
         errorMin = np.amax(TiecksError)
@@ -396,6 +410,7 @@ class ARIanalysis():
             if xDen == 0.0: # panerai's check
                 xDen = 0.001
 
+            # velocity normalization
             a = (Vmax - VstepResponseResampled[0]) / xDen
             b = Vmax - a * TiecksVresponse[ariIdx][idxVmax]
 
@@ -432,6 +447,28 @@ class ARIanalysis():
 
             fileObj.write('=' * 80 + '\n')
 
+    def savePlot(self, fileNamePrefix=None, fileType='png', figDpi=250):
+        # fileType: 'png','jpg','tif','pdf','svg','eps','ps'
+        fig, ax = plt.subplots(1, 1, figsize=[8, 5])
+
+        ax.plot(self.timeVals, self.stepResponse, c='r', linewidth=1.2, label='Patient')
+        ax.plot(self.timeVals, self.ARIbestFit, c='k', linewidth=1.2, label='ARI %d\n (best fit: %0.2f)' %(self.ARI_int,self.ARI_frac))
+
+        ax.set_ylabel('Velocity [ %s ]' % self.unitV)
+        ax.set_xlabel('Time [ s ]')
+        ax.legend()
+        ax.set_xlim([0, self.timeVals[-1]])
+        #ax.set_ylim([np.min(self.), 1.05 * np.nanmax(self.getGain('ALL', coheTreshold=coheTreshold))])
+        ax.grid(axis='both')
+
+        fig.tight_layout()
+        #plt.subplots_adjust(left=0.15, bottom=0.1, right=0.95, top=0.95, wspace=None, hspace=0.1)
+
+        if fileNamePrefix is not None:
+            plt.savefig(fileNamePrefix + '.' + fileType, dpi=figDpi, format=fileType, transparent=True)
+        else:
+            plt.show()
+
 if __name__ == '__main__':
     # read data from Panerai
 
@@ -464,6 +501,10 @@ if __name__ == '__main__':
                 #print("ARI: %d %f" % ( myARI.ARI_int, myARI.ARI_frac))
                 #ARIanalysis.save('temp.ari', sideLabel='L', writeMode='w')
                 f.write('%s; %f\n' %(file,myARI.ARI_frac))
+
+                myARI.savePlot(fileNamePrefix='lixo', fileType='png', figDpi=250)
+                print('hi')
+
     else:
         file = '../../codigoRenata/arquivosCSV/VOL05CA1_FR2.csv'
         datax = np.loadtxt(file, skiprows=1, delimiter=',')

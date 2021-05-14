@@ -8,6 +8,9 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from ARIPlotWidget import plotArray, pyQtConf
 from customWidgets import ARIresultTable
 
+plotFileFormatDict = {0: ('png', 'PNG'), 1: ('jpg', 'JPG'), 2: ('tif', 'TIF'), 3: ('pdf', 'PDF'), 4: ('svg', 'SVG'), 5: ('eps', 'EPS'),
+                      6: ('ps', 'PS'), 7:('none','None')}
+
 
 class ARIWidget(QtWidgets.QWidget):
 
@@ -26,7 +29,7 @@ class ARIWidget(QtWidgets.QWidget):
 
         # Response time
         # custom value option
-        default = 20.0
+        default = 10.0
         self.responseTime = default
         responseTimeWidget = QtWidgets.QDoubleSpinBox()
         responseTimeWidget.setRange(5, 30)
@@ -38,6 +41,16 @@ class ARIWidget(QtWidgets.QWidget):
         responseTimeWidget.valueChanged.connect(lambda: self.registerOptions('responseTime'))
 
         formLayout.addRow('responseTime (s)', responseTimeWidget)
+
+        # plot file format
+        default = 0  # png
+        self.plotFileFormat = plotFileFormatDict[default][0]
+        plotFileFormatControl = QtWidgets.QComboBox()
+        plotFileFormatControl.addItems([x[1] for x in plotFileFormatDict.values()])
+        plotFileFormatControl.setCurrentIndex(default)
+        plotFileFormatControl.currentIndexChanged.connect(lambda: self.registerOptions('plotFileFormat'))
+
+        formLayout.addRow('Plot file format', plotFileFormatControl)
 
         # ARI button
         self.applyARIButton = QtWidgets.QPushButton('Compute ARI')
@@ -57,6 +70,9 @@ class ARIWidget(QtWidgets.QWidget):
         self.saveButton.clicked.connect(self.saveARI)
         hbox.addWidget(self.saveButton)
 
+        # Create table
+        self.resultTableLWidget = ARIresultTable()
+        self.resultTableRWidget = ARIresultTable()
         hbox.addStretch(1)
 
         # plot area
@@ -66,6 +82,7 @@ class ARIWidget(QtWidgets.QWidget):
         text.setAlignment(QtCore.Qt.AlignCenter)
         text.setFont(QtGui.QFont('SansSerif', 18, QtGui.QFont.Bold))
         vboxL.addWidget(text)
+        vboxL.addWidget(self.resultTableLWidget)
         vboxL.addWidget(self.plotAreaL)
 
         self.plotAreaR = plotArray(self.data, side='R', nCols=1)
@@ -74,6 +91,7 @@ class ARIWidget(QtWidgets.QWidget):
         text.setAlignment(QtCore.Qt.AlignCenter)
         text.setFont(QtGui.QFont('SansSerif', 18, QtGui.QFont.Bold))
         vboxR.addWidget(text)
+        vboxR.addWidget(self.resultTableRWidget)
         vboxR.addWidget(self.plotAreaR)
 
         # layout
@@ -102,10 +120,12 @@ class ARIWidget(QtWidgets.QWidget):
         # left side
         if self.data.hasARIdata_L:
             self.plotData(side='L')  # self.fillTableResults(side='L')
+            self.fillTableResults(side='L')
 
         # right side
         if self.data.hasARIdata_R:
             self.plotData(side='R')  # self.fillTableResults(side='R')
+            self.fillTableResults(side='R')
 
         if self.data.hasTFdata_L or self.data.hasTFdata_R:
             self.applyARIButton.setEnabled(True)
@@ -116,9 +136,13 @@ class ARIWidget(QtWidgets.QWidget):
             self.applyARIButton.setText('Compute ARI\n\nPlease run \nTFA first')
             self.applyARIButton.setStyleSheet('color:rgb(255,0,0)')
 
-    def registerOptions(self, type):
-        if type == 'responseTime':
+    def registerOptions(self, typeOpt):
+        if typeOpt == 'responseTime':
             self.responseTime = self.sender().value()
+        if typeOpt == 'plotFileFormat':
+            self.plotFileFormat = plotFileFormatDict[self.sender().currentIndex()][0]
+            if self.plotFileFormat.lower() == 'none':
+                self.plotFileFormat = None
 
     # synchronize signals
     def applyARI(self):
@@ -128,11 +152,28 @@ class ARIWidget(QtWidgets.QWidget):
 
         # left side
         if self.data.hasARIdata_L:
-            self.plotData(side='L')  # self.fillTableResults(side='L')
+            self.plotData(side='L')
+            self.fillTableResults(side='L')
 
         # right side
         if self.data.hasARIdata_R:
-            self.plotData(side='R')  # self.fillTableResults(side='R')
+            self.plotData(side='R')
+            self.fillTableResults(side='R')
+
+    # side:  'L'  or 'R'
+    def fillTableResults(self, side='L'):
+
+        # select data
+        if side.upper() == 'L':
+            resultTable = self.resultTableLWidget
+            ARIdata = self.data.ARI_L
+        if side.upper() == 'R':
+            resultTable = self.resultTableRWidget
+            ARIdata = self.data.ARI_R
+
+        resultTable.setError(ARIdata.TiecksErrors)
+        resultTable.setBestFit(ARIdata.ARI_frac)
+
 
     def saveARI(self):
         self.parent().patientData = self.data
@@ -152,7 +193,7 @@ class ARIWidget(QtWidgets.QWidget):
                 if '.ari' in selectedFilter:
                     fileFormat = 'simple_text'
 
-                self.data.saveARI(resultFileName, format=fileFormat, register=True)
+                self.data.saveARI(filePath = resultFileName, plotFileFormat = self.plotFileFormat, format=fileFormat, register=True)
 
     # side:  'L'  or 'R'
     def plotData(self, side='L'):
@@ -168,12 +209,12 @@ class ARIWidget(QtWidgets.QWidget):
         # create plots
         plotArea.clearAll()
         plotArea.addNewPlot(yData=[[ARI_data.stepResponse, pyQtConf['plotColors']['red'], 'Patient'],
-                                   [ARI_data.ARIbestFit, pyQtConf['plotColors']['blue'], 'ARI=%d (%.3f) (best fit)' % (ARI_data.ARI_int,ARI_data.ARI_frac)]],
-                            yUnit='Velocity (cm/s)', title='', logY=False, legend=True)
+                                   [ARI_data.ARIbestFit, pyQtConf['plotColors']['blue'], 'ARI(best fit)']],
+                            yUnit='Velocity [ %s ]' % ARI_data.unitV, title='', logY=False, legend=True)
 
         # set limits
-        maxImp = np.amax(ARI_data.impulseResponse)
-        minImp = np.amin(ARI_data.impulseResponse)
+        maxImp = np.amax(ARI_data.stepResponse)
+        minImp = np.amin(ARI_data.stepResponse)
         maxTiek = np.amax(ARI_data.ARIbestFit)
         minTiek = np.amin(ARI_data.ARIbestFit)
         plotArea.setLimits(xlim=[0, ARI_data.timeVals[-1]], ylim=[[min(minImp, minTiek), max(maxImp, maxTiek)]])

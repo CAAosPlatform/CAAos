@@ -8,7 +8,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from signalPlotWidget import plotArray
 
 # dict format:  '#code' : (paramValue,'string name')
-regionTypeDict = {0: ('cycle', 'Cycle'), 1: ('interval', 'Interval'), 2: ('spike', 'Signal spike')}
+regionTypeDict = {0: ('cycle', 'Cycle'), 1: ('interval', 'Interval')} #, 2: ('spike', 'Signal spike')}
 removalMethodDict = {0: ('interpolate', 'Interpolate'), 1: ('crop', 'Crop'), 2: ('joinPeaks', 'join Peaks'), 3: ('none', 'SELECT METHOD')}
 
 cycleRegionType_UnavailableMethods = [0, 1, 3]
@@ -65,7 +65,7 @@ class artefactRemovalWidget(QtWidgets.QWidget):
         hbox.addWidget(self.newButton)
 
         # apply button
-        self.applyButton = QtWidgets.QPushButton('Remove')
+        self.applyButton = QtWidgets.QPushButton('Apply')
         self.applyButton.setFixedWidth(100)
         self.applyButton.setEnabled(False)
         self.applyButton.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Preferred)
@@ -87,6 +87,21 @@ class artefactRemovalWidget(QtWidgets.QWidget):
     def updateTab(self):
         self.plotArea.replotAllsignals()
 
+        # find if ABP signal was assigned to a channel
+        hasABPchannel = False
+        for s in self.data.signals:
+            if s.sigType == 'ABP':
+                hasABPchannel = True
+
+        if not hasABPchannel:
+            self.applyButton.setEnabled(False)
+            self.applyButton.setText('Remove\n\n Please set\n ABP channel\nfirst')
+            self.applyButton.setStyleSheet('color:rgb(255,0,0)')
+        else:
+            self.applyButton.setEnabled(True)
+            self.applyButton.setText('Remove')
+            self.applyButton.setStyleSheet('color:rgb(0,0,0);background-color:rgb(192,255,208)')  # light green
+
     # register options
     def registerOptions(self, type):
         if type == 'regionType':
@@ -98,19 +113,24 @@ class artefactRemovalWidget(QtWidgets.QWidget):
             if self.regionType == 'cycle':
                 for i in cycleRegionType_UnavailableMethods:
                     self.cutMethodWidget.model().item(i).setEnabled(False)
+                    defaultMethod = 2  # 'join peaks'
+                    methodEnable = True
 
             if self.regionType == 'interval':
                 for i in intervalRegionType_UnavailableMethods:
                     self.cutMethodWidget.model().item(i).setEnabled(False)
+                    defaultMethod = 3  # 'SELECT METHOD'
+                    methodEnable = False
 
             if self.regionType == 'spike':
                 for i in spikeRegionType_UnavailableMethods:
                     self.cutMethodWidget.model().item(i).setEnabled(False)
+                    defaultMethod = 3  # 'SELECT METHOD'
+                    methodEnable = False
 
-            default = 3
-            self.cutMethod = removalMethodDict[default][0]
-            self.cutMethodWidget.setCurrentIndex(default)
-            self.newButton.setEnabled(False)
+            self.cutMethod = removalMethodDict[defaultMethod][0]
+            self.cutMethodWidget.setCurrentIndex(defaultMethod)
+            self.newButton.setEnabled(methodEnable)
 
         if type == 'cutMethod':
             self.cutMethod = removalMethodDict[self.sender().currentIndex()][0]
@@ -146,9 +166,9 @@ class artefactRemovalWidget(QtWidgets.QWidget):
             return
 
         # find segment indexes. use Pchannel
-        if self.cutMethod == 'joinPeaks':
+        if self.cutMethod in ['joinPeaks', 'spike']:
             ABPsignal = [s for s in self.data.signals if s.sigType == 'ABP']
-            [peaksIdx, _, _, _] = ABPsignal[0].findPeaks()
+            [peaksIdx, _, _, _] = ABPsignal[0].findPeaks(method='ampd', findPeaks=True, findValleys=False, register=False)
 
         if self.regionType == 'interval':
 
@@ -160,7 +180,7 @@ class artefactRemovalWidget(QtWidgets.QWidget):
                         s.cropInterval(posMin, posMax, RemoveSegment=False)
                     else:
                         s.cropInterval(posMin, posMax, RemoveSegment=True, segmentIndexes=peaksIdx)
-                        # finds the start point
+                        # finds the start point to adjust the plot
                         start = peaksIdx[np.searchsorted(peaksIdx, posMin) - 1]
                         xMin = self.plotArea.xData[start]
 

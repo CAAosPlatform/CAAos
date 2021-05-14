@@ -57,7 +57,7 @@ class TFAresultTable(QtWidgets.QWidget):
         self.nChannels = 0
         self.nRows = 3  # does not include the label row
         self.nCols = 3  # does not include the label column
-        self.colSizes = 100
+        self.colSizes = 130
         self.colLabels = ['VLF', 'LF', 'HF']
         self.rowLabels = ['Gain', 'Phase (deg)', 'Coherence']
         self.colLabelsOffset = 10
@@ -93,13 +93,13 @@ class TFAresultTable(QtWidgets.QWidget):
         # cels
         for i in range(self.nRows):
             for j in range(self.nCols):
-                text = QtGui.QLabel('{0:.4f}'.format(0), self)
+                text = QtGui.QLabel('{0:.3f}'.format(0), self)
                 text.setAlignment(QtCore.Qt.AlignRight)
                 self.grid.addWidget(text, i + 1, j + 1)
 
     def setValue(self, row, col, value):
         text = self.grid.itemAtPosition(row + 1, col + 1).widget()
-        text.setText(str('{0:.4f}'.format(value)))
+        text.setText(str('{0:.3f}'.format(value)))
 
     def setGain(self, values):
         for i, v in enumerate(values):
@@ -118,39 +118,52 @@ class ARIresultTable(QtWidgets.QWidget):
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
         self.nChannels = 0
-        self.nRows = 3  # does not include the label row
-        self.nCols = 3  # does not include the label column
-        self.colSizes = 100
-        self.colLabels = ['VLF', 'LF', 'HF']
-        self.rowLabels = ['Gain', 'Phase (deg)', 'Coherence']
-        self.colLabelsOffset = 10
+        self.nRows = 1  # does not include the label row
+        self.nCols = 10  # does not include the label column
+        self.colSizes = 120
+        self.colLabels = ['0','1','2','3','4','5','6','7','8','9']
+        self.rowLabels = ['Error:']
+        self.colLabelsOffset = 5
         self.initUI()
-        self.setFixedWidth(300)
+        #self.setFixedWidth(700)
         self.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Preferred)
 
     def initUI(self):
+        vboxL = QtWidgets.QVBoxLayout()
         self.grid = QtWidgets.QGridLayout()
         self.grid.setHorizontalSpacing(0)
         self.grid.setVerticalSpacing(0)
-        self.grid.setRowMinimumHeight(0, 30)
-        self.grid.setColumnMinimumWidth(0, 50)
-        self.setLayout(self.grid)
+        self.grid.setRowMinimumHeight(0, 10)
+        self.grid.setColumnMinimumWidth(0, 20)
+
+        #self.bestFitLabel = QtGui.QLabel('Best fit: ', self)
+
+        vboxL.addLayout(self.grid)
+        #vboxL.addWidget(self.bestFitLabel)
+
+        self.setLayout(vboxL)
         self.initTable()
-        self.setGain([0.0, 0.0, 0.0])
-        self.setPhase([0.0, 0.0, 0.0])
-        self.setCoherence([0.0, 0.0, 0.0])
+        self.setError([0.0,]*10)
+        self.setBestFit(0)
 
     def initTable(self):
+
         # columns
         for i in range(self.nCols):
             text = QtGui.QLabel(self.colLabels[i], self)
             text.setAlignment(QtCore.Qt.AlignRight)
             self.grid.addWidget(text, 0, i + 1)
             text.setFixedWidth(50)
+
         # rows
+        text = QtGui.QLabel('ARI:', self)
+        text.setAlignment(QtCore.Qt.AlignRight)
+        self.grid.addWidget(text, 0,0)
+        text.setFixedWidth(50)
+
         for i in range(self.nRows):
             text = QtGui.QLabel(self.rowLabels[i], self)
-            text.setAlignment(QtCore.Qt.AlignLeft)
+            text.setAlignment(QtCore.Qt.AlignRight)
             self.grid.addWidget(text, i + 1, 0)
 
         # cels
@@ -159,19 +172,18 @@ class ARIresultTable(QtWidgets.QWidget):
                 text = QtGui.QLabel('{0:.2f}'.format(0), self)
                 text.setAlignment(QtCore.Qt.AlignRight)
                 self.grid.addWidget(text, i + 1, j + 1)
+        #best Fit
+        self.grid.addWidget(QtGui.QLabel('Best Fit:', self), self.nRows+ 1, 0)
+        self.bestFitLabel = QtGui.QLabel('0', self)
+        self.bestFitLabel.setAlignment(QtCore.Qt.AlignRight)
+        self.grid.addWidget(self.bestFitLabel, self.nRows+ 1, 1)
 
-    def setValue(self, row, col, value):
-        text = self.grid.itemAtPosition(row + 1, col + 1).widget()
-        text.setText(str('{0:.2f}'.format(value)))
-
-    def setGain(self, values):
+    def setError(self, values):
+        row=0
         for i, v in enumerate(values):
-            self.setValue(0, i, v)
+            valueStr = str('{0:.2f}'.format(v))
+            text = self.grid.itemAtPosition(row + 1, i + 1).widget()
+            text.setText(valueStr)
 
-    def setPhase(self, values):
-        for i, v in enumerate(values):
-            self.setValue(1, i, v)
-
-    def setCoherence(self, values):
-        for i, v in enumerate(values):
-            self.setValue(2, i, v)
+    def setBestFit(self, bestARI):
+        self.bestFitLabel.setText('{0:.2f}'.format(bestARI)    )

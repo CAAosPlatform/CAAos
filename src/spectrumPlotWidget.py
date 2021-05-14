@@ -36,7 +36,7 @@ class plotArray(ARIPlotWidget.plotArray):
     # where data_i is a numpy array or None
     def addNewPlot(self, yData=None, yUnit='adim', title=None, logY=False, legend=False):
 
-        if self.side.upper == 'R':
+        if self.side.upper() == 'R':
             self.xData = self.data.PSD_R.freq
         else:
             self.xData = self.data.PSD_L.freq

@@ -20,7 +20,7 @@ if darkTheme:
 else:
     pyQtConf = {'backgroundColor': 'w', 'foregroundColor': 'k', 'textColor': (0, 0, 0),
                 'plotColors': {'red': (255, 0, 0), 'green': (120, 255, 90), 'blue': (0, 100, 200), 'base': (0, 0, 0)},
-                'linearRegionBrush': pg.mkBrush((50, 50, 50, 50)), 'linearRegionPen': pg.mkPen(color=(255, 0, 0, 255)), 'plotLineWidth': 2.0,
+                'linearRegionBrush': pg.mkBrush((50, 50, 50, 50)), 'linearRegionPen': pg.mkPen(color=(255, 0, 0, 255)), 'plotLineWidth': 1.0,
                 'peakMarkSymbol': 'o', 'peakMarkSize': 5, 'peakMarkColor': (255, 0, 0)}
 
 if pyQtConf['plotLineWidth'] == 1.0:
@@ -148,9 +148,9 @@ class signalPlot(pg.PlotItem):
     # replot data without creating a new curve. It changes xData and yData only.
     # yData format: list of numpy arrays [ yData_i ]
     # yData_i must be the same size of xData. If xData=None, the current xData is used
-    def replot(self, xData, yData):
+    def replot(self, xData, yData, yUnit):
         self.yData = yData
-
+        self.setLabel('left', yUnit)
         if xData is not None:
             self.xData = xData
 
@@ -218,7 +218,7 @@ class plotArray(pg.GraphicsLayoutWidget):
     def replotAllsignals(self):
         self.setXData(Npoints=self.data.signals[0].nPoints, samplingRate_Hz=self.data.signals[0].samplingRate_Hz, x0=0.0)
         for s in self.data.signals:
-            self.axes[s.channel].replot(self.xData, [s.data])
+            self.axes[s.channel].replot(self.xData, [s.data],s.unit)
             self.axes[s.channel].mysetTitle('Ch %d) ' % s.channel + s.label)
 
     # set xData vector (the same for all plots
@@ -279,10 +279,10 @@ class plotArray(pg.GraphicsLayoutWidget):
         # gets teh current mouse click position
 
     def getClickPosition(self):
-        channel = self.sender().channel
-        position = self.sender().mousePos
-        # print('getClickPosition: channel: %d' % channel, ' position: %f,%f ' %(position[0],position[1]))
-        return [channel, position]
+        self.clickChannel = self.sender().channel
+        self.clickPosition = self.sender().mousePos
+        #print('getClickPosition: channel: %d' % self.clickChannel, ' position: %f,%f ' %(self.clickPosition[0],self.clickPosition[1]))
+        return [self.clickChannel, self.clickPosition]
 
     # converts X data to sample
     def convXtoSample(self, xVal, roundMethod='nearest'):

@@ -22,9 +22,19 @@ def diferencaPedro(numpyData, file, label, isComplex=False):
 # segmentLength_s:  float
 # windowType: string  values: 'hann' (default), 'tukey', 'boxcar', 'rectangular', 'hamming'
 class PSDestimator():
-    def __init__(self, dataX, dataY, samplingFrequency_Hz, overlap, segmentLength_s, windowType='hanning', removeBias=True):
-        self.dataX = dataX
-        self.dataY = dataY
+    def __init__(self, dataX, dataY, samplingFrequency_Hz, overlap, segmentLength_s, windowType='hanning', detrend=False,unitX=None,unitY=None):
+
+        # removing bias, based on Panerai's algorithm
+        if detrend:
+            detrendType='linear'
+        else:
+            detrendType = 'constant'
+        self.dataX = scipySignal.detrend(dataX, type=detrendType)
+        self.dataY = scipySignal.detrend(dataY, type=detrendType)
+
+        self.unitX = unitX
+        self.unitY = unitY
+
         self.Fs_Hz = samplingFrequency_Hz
         self.Ts = 1.0 / self.Fs_Hz
         self.overlap = overlap
@@ -32,7 +42,6 @@ class PSDestimator():
         self.shiftSize = int((1.0 - self.overlap) * self.segmentLength)
         self.nSegments = int((len(self.dataX) - self.segmentLength) / self.shiftSize) + 1  # atention: in python 3.x, / is float division!
         self.windowType = windowType
-        self.removeBias = removeBias
 
     def computeWelch(self):
         self.buildWindow(self.windowType)
@@ -56,13 +65,13 @@ class PSDestimator():
     def buildWindow(self, windowType='hann'):
         self.windowType = windowType.lower()
         if self.windowType == 'hann':
-            self.window = scipySignal.windows.hann(self.segmentLength)
+            self.window = scipySignal.windows.hann(self.segmentLength,sym=False)
         elif self.windowType == 'tukey':
-            self.window = scipySignal.windows.tukey(self.segmentLength, alpha=0.5)
+            self.window = scipySignal.windows.tukey(self.segmentLength,sym=False, alpha=0.5)
         elif self.windowType in ['boxcar', 'rectangular']:
-            self.window = scipySignal.windows.boxcar(self.segmentLength)
+            self.window = scipySignal.windows.boxcar(self.segmentLength,sym=False)
         elif self.windowType == 'hamming':
-            self.window = scipySignal.windows.hamming(self.segmentLength)
+            self.window = scipySignal.windows.hamming(self.segmentLength,sym=False)
 
     def DFT(self, signal):
         """
@@ -91,8 +100,6 @@ class PSDestimator():
             endIdx = startIdx + self.segmentLength
 
             signalSegment = signal[startIdx:endIdx]
-            if self.removeBias:
-                signalSegment = scipySignal.detrend(signalSegment, type='constant')
 
             signalSegment = signalSegment * self.window
 
@@ -110,9 +117,9 @@ class PSDestimator():
         Sxx = np.zeros(self.segmentLength)
         for i in range(self.nSegments):
             if forceReal:  # see notebook 3, page 36 equation 5
-                Sxx = Sxx + np.multiply(np.conjugate(DFTx[i]), DFTx[i]).real * self.Ts / normWindowSq
+                Sxx += np.multiply(np.conjugate(DFTx[i]), DFTx[i]).real * self.Ts / normWindowSq
             else:
-                Sxx = Sxx + np.multiply(np.conjugate(DFTx[i]), DFTx[i]) * self.Ts / normWindowSq
+                Sxx += np.multiply(np.conjugate(DFTx[i]), DFTx[i]) * self.Ts / normWindowSq
 
         Sxx /= self.nSegments  # divides by nSegments to compute the average Sxx
         return Sxx
@@ -120,9 +127,9 @@ class PSDestimator():
     def getCrossSpectrum(self, DFTx, DFTy):
         normWindowSq = np.linalg.norm(self.window) ** 2
 
-        Sxy = np.zeros(self.segmentLength)
+        Sxy = np.zeros(self.segmentLength,dtype=np.complex128)
         for i in range(self.nSegments):  # see notebook 3, page 36 equation 6
-            Sxy = Sxy + np.multiply(np.conjugate(DFTx[i]), DFTy[i]) * self.Ts / normWindowSq
+            Sxy += np.multiply(np.conjugate(DFTx[i]), DFTy[i]) * self.Ts / normWindowSq
 
         Sxy /= self.nSegments  # divides by nSegments to compute the average Sxy
         return Sxy
@@ -153,7 +160,8 @@ class PSDestimator():
 
         fileObj.write('SIDE=%s\n' % sideLabel)
         fileObj.write('NPOINTS=%d\n' % len(self.freqRangeExtractor.getFreq(freqRange='ALL')))
-
+        fileObj.write('UNIT_X=%s\n' % self.unitX)
+        fileObj.write('UNIT_Y=%s\n' % self.unitY)
         fileObj.write('FREQ_HZ=%s\n' % np.array_str(self.freqRangeExtractor.getFreq(freqRange='ALL'), max_line_width=1000))
         fileObj.write('Sxx=%s\n' % np.array_str(self.freqRangeExtractor.getSignal(self.Sxx, freqRange='ALL'), max_line_width=1000))
         fileObj.write('Syy=%s\n' % np.array_str(self.freqRangeExtractor.getSignal(self.Syy, freqRange='ALL'), max_line_width=1000))

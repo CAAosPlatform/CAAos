@@ -14,7 +14,7 @@ from spectrumPlotWidget import plotArray, pyQtConf
 # dict format:  '#code' : (paramValue,'string name')
 estimatorTypeDict = {0: ('H1', 'H1=Sxy/Sxx'), 1: ('H2', 'H2=Syy/Syx')}
 plotFileFormatDict = {0: ('png', 'PNG'), 1: ('jpg', 'JPG'), 2: ('tif', 'TIF'), 3: ('pdf', 'PDF'), 4: ('svg', 'SVG'), 5: ('eps', 'EPS'),
-                      6: ('ps', 'PS')}
+                      6: ('ps', 'PS'), 7:('none','None')}
 
 
 class TFAWidget(QtWidgets.QWidget):
@@ -165,6 +165,8 @@ class TFAWidget(QtWidgets.QWidget):
             self.removeNegPhase = self.sender().isChecked()
         if typeOpt == 'plotFileFormat':
             self.plotFileFormat = plotFileFormatDict[self.sender().currentIndex()][0]
+            if self.plotFileFormat.lower() == 'none':
+                self.plotFileFormat = None
 
     # synchronize signals
     def applyTFA(self):
@@ -199,9 +201,9 @@ class TFAWidget(QtWidgets.QWidget):
         resultTable.setGain(avg)
 
         # phase
-        avg = [TFAdata.getPhaseStatistics(freqRange=r, coheTreshold=False, remNegPhase=self.removeNegPhase)[0] * 180 / np.pi for r in
+        avg = [TFAdata.getPhaseStatistics(freqRange=r, coheTreshold=self.coheTreshold, remNegPhase=self.removeNegPhase)[0] * 180 / np.pi for r in
                ['VLF', 'LF', 'HF']]
-        std = [TFAdata.getPhaseStatistics(freqRange=r, coheTreshold=False, remNegPhase=self.removeNegPhase)[1] * 180 / np.pi for r in
+        std = [TFAdata.getPhaseStatistics(freqRange=r, coheTreshold=self.coheTreshold, remNegPhase=self.removeNegPhase)[1] * 180 / np.pi for r in
                ['VLF', 'LF', 'HF']]
         resultTable.setPhase(avg)
 
@@ -229,7 +231,7 @@ class TFAWidget(QtWidgets.QWidget):
                     fileFormat = 'simple_text'
 
                 self.data.saveTF(resultFileName, format=fileFormat, freqRange='ALL', register=True)
-                self.data.saveTFAstatistics(os.path.splitext(resultFileName)[0] + '_stat.tfa', self.plotFileFormat, self.coheTreshold,
+                self.data.saveTFAstatistics(os.path.splitext(resultFileName)[0] + '_TFA.tfa', self.plotFileFormat, self.coheTreshold,
                                             self.removeNegPhase, register=True)
 
     # side:  'L'  or 'R'
@@ -239,22 +241,27 @@ class TFAWidget(QtWidgets.QWidget):
         if side.upper() == 'L':
             plotArea = self.plotAreaL
             TFAdata = self.data.TFA_L
+
         if side.upper() == 'R':
             plotArea = self.plotAreaR
             TFAdata = self.data.TFA_R
 
+        plotArea.clearAll()
         # create plots
         if len(plotArea.axes) > 0:
             plotArea.replot(plotNbr=0, yData=[TFAdata.getGain(freqRange='FULL')])
             plotArea.replot(plotNbr=1, yData=[TFAdata.getPhase(freqRange='FULL') * 180 / np.pi])
             plotArea.replot(plotNbr=2, yData=[TFAdata.getCoherence(freqRange='FULL')])
         else:
-            plotArea.addNewPlot(yData=[[TFAdata.getGain(freqRange='FULL'), pyQtConf['plotColors']['base'], 'Gain']], yUnit='adim', title='Gain',
+            plotArea.addNewPlot(yData=[[TFAdata.getGain(freqRange='FULL'), pyQtConf['plotColors']['base'], 'Gain']], yUnit='Gain\n[ '
+                                                                                                                           +TFAdata.unitH+' ]',
+                                title='',
                                 logY=False)
-            plotArea.addNewPlot(yData=[[TFAdata.getPhase(freqRange='FULL') * 180 / np.pi, pyQtConf['plotColors']['base'], 'Phase']], yUnit='degree',
-                                title='Phase', logY=False)
-            plotArea.addNewPlot(yData=[[TFAdata.getCoherence(freqRange='FULL'), pyQtConf['plotColors']['base'], 'Coherence']], yUnit='adim.',
-                                title='Coherence', logY=False)
+            plotArea.addNewPlot(yData=[[TFAdata.getPhase(freqRange='FULL') * 180 / np.pi, pyQtConf['plotColors']['base'], 'Phase']],
+                                yUnit='Phase [ degree ]',
+                                title='', logY=False)
+            plotArea.addNewPlot(yData=[[TFAdata.getCoherence(freqRange='FULL'), pyQtConf['plotColors']['base'], 'Coherence']], yUnit='Coh. [ adim. ]',
+                                title='', logY=False)
 
         # set limits
         _, _, coheMin, coheMax = TFAdata.getCoherenceStatistics(freqRange='ALL')

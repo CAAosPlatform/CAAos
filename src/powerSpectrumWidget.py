@@ -83,14 +83,14 @@ class powerSpectrumWidget(QtWidgets.QWidget):
 
         formLayoutB.addRow('Use beat-to-beat data', useB2B)
 
-        # remove bias
-        default = True
-        self.removeBias = default
-        removeBias = QtGui.QCheckBox('', self)
-        removeBias.setChecked(self.removeBias)
-        removeBias.stateChanged.connect(lambda: self.registerOptions('removeBias'))
+        # detrend
+        default = False
+        self.detrend = default
+        detrend = QtGui.QCheckBox('', self)
+        detrend.setChecked(self.detrend)
+        detrend.stateChanged.connect(lambda: self.registerOptions('detrend'))
 
-        formLayoutB.addRow('Remove bias from segments', removeBias)
+        formLayoutB.addRow('Detrend signals', detrend)
 
         # post processing filter
         default = 2  # triangular
@@ -183,8 +183,8 @@ class powerSpectrumWidget(QtWidgets.QWidget):
             self.windowType = windowTypeDict[self.sender().currentIndex()][0]
         if type == 'useB2B':
             self.useB2B = self.sender().isChecked()
-        if type == 'removeBias':
-            self.removeBias = self.sender().isChecked()
+        if type == 'detrend':
+            self.detrend = self.sender().isChecked()
         if type == 'filterType':
             self.filterType = filterTypeDict[self.sender().currentIndex()][0]
 
@@ -199,7 +199,7 @@ class powerSpectrumWidget(QtWidgets.QWidget):
 
     # synchronize signals
     def applyPSDwelch(self):
-        self.data.computePSDwelch(self.useB2B, self.overlap, self.segmentLength_s, self.windowType, self.removeBias, filterType=self.filterType,
+        self.data.computePSDwelch(self.useB2B, self.overlap, self.segmentLength_s, self.windowType, self.detrend, filterType=self.filterType,
                                   nTapsFilter=self.nTaps)
         self.applyPSDButton.clearFocus()
         self.saveButton.setEnabled(True)
@@ -249,7 +249,7 @@ class powerSpectrumWidget(QtWidgets.QWidget):
         else:
             plotArea.addNewPlot(
                 yData=[[PSDdata.Sxx, pyQtConf['plotColors']['red'], 'Auto ABP'], [PSDdata.Syy, pyQtConf['plotColors']['blue'], 'Auto CBFv'],
-                       [abs(PSDdata.Sxy), pyQtConf['plotColors']['base'], 'Cross']], yUnit='adim', logY=True, legend=True)
+                       [abs(PSDdata.Sxy), pyQtConf['plotColors']['base'], 'Cross']], yUnit='Power Spectral Density', logY=True, legend=True)
 
         [_, _, SxxMin, SxxMax] = PSDdata.freqRangeExtractor.getStatistics(PSDdata.Sxx, freqRange='ALL')
         [_, _, SyyMin, SyyMax] = PSDdata.freqRangeExtractor.getStatistics(PSDdata.Syy, freqRange='ALL')

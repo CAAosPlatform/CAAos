@@ -649,7 +649,7 @@ class patientData():
 
         """
         for operation in operationsElem:
-            if operation.tag not in ['resample', 'setlabel', 'synchronize', 'findRRmarks', 'B2Bcalc', 'setType', 'calibrate', 'LPfilter',
+            if operation.tag not in ['resample', 'setLabel', 'setUnit', 'synchronize', 'findRRmarks', 'B2Bcalc', 'setType', 'calibrate', 'LPfilter',
                                      'interpolate', 'cropInterval', 'insertPeak', 'removePeak', 'SIGsave', 'B2Bsave', 'B2B_LPfilter']:
                 print('Operation \'%s\' not recognized. Exiting...' % operation.tag)
                 exit()
@@ -662,11 +662,17 @@ class patientData():
                     typeSignal = None
                 self.signals[channel].setType(typeSignal, register=False)
 
-            if operation.tag == 'setlabel':
+            if operation.tag == 'setLabel':
                 label = tools.getElemValueXpath(operation, xpath='label', valType='str')
                 channel = tools.getElemValueXpath(operation, xpath='channel', valType='int')
                 print('Setting Label channel=%d: %s' % (channel, label))
                 self.signals[channel].setLabel(label, register=False)
+
+            if operation.tag == 'setUnit':
+                unit = tools.getElemValueXpath(operation, xpath='unit', valType='str')
+                channel = tools.getElemValueXpath(operation, xpath='channel', valType='int')
+                print('Setting Unit channel=%d: %s' % (channel, unit))
+                self.signals[channel].setUnit(unit, register=False)
 
             if operation.tag == 'resample':
                 sampleRate = tools.getElemValueXpath(operation, xpath='sampleRate', valType='float')
@@ -789,12 +795,12 @@ class patientData():
                 overlap = tools.getElemValueXpath(operation, xpath='overlap', valType='float')
                 segmentLength_s = tools.getElemValueXpath(operation, xpath='segmentLength_s', valType='float')
                 windowType = tools.getElemValueXpath(operation, xpath='windowType', valType='str')
-                removeBias = tools.getElemValueXpath(operation, xpath='removeBias', valType='bool')
+                detrend = tools.getElemValueXpath(operation, xpath='detrend', valType='bool')
                 filterType = tools.getElemValueXpath(operation, xpath='filterType', valType='str')
                 nTapsFilter = tools.getElemValueXpath(operation, xpath='nTapsFilter', valType='int')
-                print('Computing PSDwelch: useB2B=%s overlap=%f segmentLength_s=%f windowType=%s removeBias=%s filterType=%s  nTapsFilter=%d' % (
-                    str(useB2B), overlap, segmentLength_s, windowType, str(removeBias), filterType, nTapsFilter))
-                self.computePSDwelch(useB2B, overlap, segmentLength_s, windowType, removeBias, filterType, nTapsFilter, register=False)
+                print('Computing PSDwelch: useB2B=%s overlap=%f segmentLength_s=%f windowType=%s detrend=%s filterType=%s  nTapsFilter=%d' % (
+                    str(useB2B), overlap, segmentLength_s, windowType, str(detrend), filterType, nTapsFilter))
+                self.computePSDwelch(useB2B, overlap, segmentLength_s, windowType, detrend, filterType, nTapsFilter, register=False)
 
             if operation.tag == 'PSDsave':
                 fileName = tools.getElemValueXpath(operation, xpath='fileName', valType='str')
@@ -822,6 +828,10 @@ class patientData():
                 coheTreshold = tools.getElemValueXpath(operation, xpath='coheTreshold', valType='bool')
                 print('TFAsaveStat: remNegPhase=%s coheTreshold=%s fileName=%s  plotFileFormat=%s' % (
                     str(remNegPhase), str(coheTreshold), fileName, plotFileFormat))
+
+                if plotFileFormat.lower() == 'none':
+                    plotFileFormat = None
+
                 self.saveTFAstatistics(self.dirName + fileName, plotFileFormat, coheTreshold, remNegPhase, register=False)
 
             if operation.tag == 'ARI':
@@ -830,9 +840,15 @@ class patientData():
 
             if operation.tag == 'ARIsave':
                 fileName = tools.getElemValueXpath(operation, xpath='fileName', valType='str')
+                plotFileFormat = tools.getElemValueXpath(operation, xpath='plotFileFormat', valType='str')
                 format = tools.getElemValueXpath(operation, xpath='format', valType='str')
                 print('ARIsave: format=%s fileName=%s' % (format, fileName))
-                self.saveARI(self.dirName + fileName, format, register=False)
+
+                if plotFileFormat.lower() == 'none':
+                    plotFileFormat = None
+
+                self.saveARI(self.dirName + fileName, plotFileFormat, format, register=False)
+
 
     def findChannel(self, attribute, identifier):
         """
@@ -1230,7 +1246,8 @@ class patientData():
             self.PPoperationsNode.append(xmlElement)
 
     # filterType: valid values: 'triangular', 'rect', None (no filter)
-    def computePSDwelch(self, useB2B=True, overlap=0.5, segmentLength_s=100, windowType='hanning', removeBias=True, filterType=None, nTapsFilter=3,
+    def computePSDwelch(self, useB2B=True, overlap=0.5, segmentLength_s=100, windowType='hanning', detrend=False, filterType=None,
+                        nTapsFilter=3,
                         register=True):
         # find ABP and CBFV channels
         ABP_channel = None
@@ -1255,7 +1272,8 @@ class patientData():
                 outputSignal = self.signals[CBFv_L_channel].data
                 Fs = self.signals[ABP_channel].samplingRate_Hz
 
-            self.PSD_L = PSDestimator(inputSignal, outputSignal, Fs, overlap, segmentLength_s, windowType, removeBias)
+            self.PSD_L = PSDestimator(inputSignal, outputSignal, Fs, overlap, segmentLength_s, windowType, detrend,self.signals[ABP_channel].unit,
+                                      self.signals[CBFv_L_channel].unit)
             self.PSD_L.computeWelch()
             self.hasPSDdata_L = True
 
@@ -1275,7 +1293,8 @@ class patientData():
                 outputSignal = self.signals[CBFv_R_channel].data
                 Fs = self.signals[ABP_channel].samplingRate_Hz
 
-            self.PSD_R = PSDestimator(inputSignal, outputSignal, Fs, overlap, segmentLength_s, windowType, removeBias)
+            self.PSD_R = PSDestimator(inputSignal, outputSignal, Fs, overlap, segmentLength_s, windowType, detrend,self.signals[ABP_channel].unit,
+                                      self.signals[CBFv_R_channel].unit)
             self.PSD_R.computeWelch()
             self.hasPSDdata_R = True
 
@@ -1290,7 +1309,7 @@ class patientData():
             tools.ETaddElement(parent=xmlElement, tag='overlap', text=str(overlap))
             tools.ETaddElement(parent=xmlElement, tag='segmentLength_s', text=str(segmentLength_s))
             tools.ETaddElement(parent=xmlElement, tag='windowType', text=windowType)
-            tools.ETaddElement(parent=xmlElement, tag='removeBias', text=str(removeBias))
+            tools.ETaddElement(parent=xmlElement, tag='detrend', text=str(detrend))
             if filterType is None:
                 tools.ETaddElement(parent=xmlElement, tag='filterType', text='None')
             else:
@@ -1389,7 +1408,7 @@ class patientData():
     def computeTFA(self, estimatorType='H1', register=True):
 
         if self.hasPSDdata_L:
-            self.TFA_L = transferFunctionAnalysis(welchData=self.PSD_L)
+            self.TFA_L = transferFunctionAnalysis(PSDdata=self.PSD_L)
             if estimatorType.upper() == 'H1':
                 self.TFA_L.computeH1()
             if estimatorType.upper() == 'H2':
@@ -1397,7 +1416,7 @@ class patientData():
             self.hasTFdata_L = True
 
         if self.hasPSDdata_R:
-            self.TFA_R = transferFunctionAnalysis(welchData=self.PSD_R)
+            self.TFA_R = transferFunctionAnalysis(PSDdata=self.PSD_R)
             if estimatorType.upper() == 'H1':
                 self.TFA_R.computeH1()
             if estimatorType.upper() == 'H2':
@@ -1493,12 +1512,13 @@ class patientData():
 
         print('Ok!')
 
-    def saveTFAstatistics(self, filePath, plotFileFormat, coheTreshold=False, remNegPhase=False, register=True):
+    def saveTFAstatistics(self, filePath, plotFileFormat = None, coheTreshold=False, remNegPhase=False, register=True):
         # plotFileFormat: valid formats:
 
-        if plotFileFormat.lower() not in ['png', 'jpg', 'tif', 'pdf', 'svg', 'eps', 'ps']:
-            print('TFA Plot file format \'%s\' not recognized. Exiting...' % plotFileFormat)
-            exit()
+        if plotFileFormat is not None:
+            if plotFileFormat.lower() not in ['png', 'jpg', 'tif', 'pdf', 'svg', 'eps', 'ps']:
+                print('TFA Plot file format \'%s\' not recognized. Exiting...' % plotFileFormat)
+                sys.exit()
 
         if (not self.hasTFdata_L) and (not self.hasTFdata_R):
             print('No transfer function data was found. Canceling save...')
@@ -1514,17 +1534,18 @@ class patientData():
             if self.hasTFdata_R:
                 self.TFA_R.saveStatistics(outputFile, 'R', coheTreshold, remNegPhase, 'w')
 
-        if self.hasTFdata_L:
-            self.TFA_L.savePlot(fileNamePrefix=os.path.splitext(filePath)[0] + '_Left', fileType=plotFileFormat.lower(), coheTreshold=coheTreshold,
-                                remNegPhase=remNegPhase, figDpi=250, fontSize=6)
-        if self.hasTFdata_R:
-            self.TFA_R.savePlot(fileNamePrefix=os.path.splitext(filePath)[0] + '_Right', fileType=plotFileFormat.lower(), coheTreshold=coheTreshold,
-                                remNegPhase=remNegPhase, figDpi=250, fontSize=6)
+        if plotFileFormat is not None:
+            if self.hasTFdata_L:
+                self.TFA_L.savePlot(fileNamePrefix=os.path.splitext(filePath)[0] + '_Left', fileType=plotFileFormat.lower(), coheTreshold=coheTreshold,
+                                    remNegPhase=remNegPhase, figDpi=250, fontSize=6)
+            if self.hasTFdata_R:
+                self.TFA_R.savePlot(fileNamePrefix=os.path.splitext(filePath)[0] + '_Right', fileType=plotFileFormat.lower(), coheTreshold=coheTreshold,
+                                    remNegPhase=remNegPhase, figDpi=250, fontSize=6)
 
         if register:
             xmlElement = ETree.Element('TFAsaveStat')
             tools.ETaddElement(parent=xmlElement, tag='fileName', text=os.path.basename(filePath))
-            tools.ETaddElement(parent=xmlElement, tag='plotFileFormat', text=os.path.basename(plotFileFormat))
+            tools.ETaddElement(parent=xmlElement, tag='plotFileFormat', text=str(plotFileFormat))
             tools.ETaddElement(parent=xmlElement, tag='remNegPhase', text=str(remNegPhase))
             tools.ETaddElement(parent=xmlElement, tag='coheTreshold', text=str(coheTreshold))
             self.ARoperationsNode.append(xmlElement)
@@ -1532,18 +1553,23 @@ class patientData():
     def computeARI(self, register=True):
 
         if self.hasTFdata_L:
-            self.ARI_L = ARIanalysis(self.TFA_L.H, self.TFA_L.welch.Ts)
+            self.ARI_L = ARIanalysis(self.TFA_L.H, self.TFA_L.PSDdata.Ts,self.TFA_L.PSDdata.unitX,self.TFA_L.PSDdata.unitY)
             self.hasARIdata_L = True
 
         if self.hasTFdata_R:
-            self.ARI_R = ARIanalysis(self.TFA_R.H, self.TFA_R.welch.Ts)
+            self.ARI_R = ARIanalysis(self.TFA_R.H, self.TFA_R.PSDdata.Ts,self.TFA_R.PSDdata.unitX,self.TFA_R.PSDdata.unitY)
             self.hasARIdata_R = True
 
         if register:
             xmlElement = ETree.Element('ARI')
             self.ARoperationsNode.append(xmlElement)
 
-    def saveARI(self, filePath, format='csv', register=True):
+    def saveARI(self, filePath, plotFileFormat = None,format='csv', register=True):
+
+        if plotFileFormat is not None:
+            if plotFileFormat.lower() not in ['png', 'jpg', 'tif', 'pdf', 'svg', 'eps', 'ps']:
+                print('TFA Plot file format \'%s\' not recognized. Exiting...' % plotFileFormat)
+                sys.exit()
 
         if (not self.hasARIdata_L) and (not self.hasARIdata_R):
             print('No ARI data was found. Canceling save...')
@@ -1609,9 +1635,16 @@ class patientData():
                 x = np.array(data, dtype=dt)
                 np.save(outputFile, x)
 
+        if plotFileFormat is not None:
+            if self.hasARIdata_L:
+                self.ARI_L.savePlot(fileNamePrefix=os.path.splitext(filePath)[0] + '_Left', fileType=plotFileFormat.lower(), figDpi=250)
+            if self.hasARIdata_R:
+                self.ARI_R.savePlot(fileNamePrefix=os.path.splitext(filePath)[0] + '_Right', fileType=plotFileFormat.lower(), figDpi=250)
+
         if register:
             xmlElement = ETree.Element('ARIsave')
             tools.ETaddElement(parent=xmlElement, tag='fileName', text=os.path.basename(filePath))
+            tools.ETaddElement(parent=xmlElement, tag='plotFileFormat', text=str(plotFileFormat))
             tools.ETaddElement(parent=xmlElement, tag='format', text=format.lower())
             self.ARoperationsNode.append(xmlElement)
 

@@ -24,11 +24,11 @@ class signalPropsWidget(QtWidgets.QWidget):
         hbox.setAlignment(QtCore.Qt.AlignTop)
 
         # table with signal Information
-        self.signalTab = signalPropsTab(['Label', 'Signal type'], [200, 100], 83)
+        self.signalTab = signalPropsTab(['Label', 'unit', 'Signal type'], [200, 100, 100], 83)
         hbox.addWidget(self.signalTab)
 
         for s in self.data.signals:
-            self.signalTab.addSignal(channel=s.channel, label=s.label, sigType=s.sigType)
+            self.signalTab.addSignal(channel=s.channel, label=s.label, unit = s.unit, sigType=s.sigType)
 
         # apply button
         self.applyButton = QtWidgets.QPushButton('Apply')
@@ -56,6 +56,7 @@ class signalPropsWidget(QtWidgets.QWidget):
             channel = ch.channel
             self.data.signals[channel].setType(ch.sigType)
             self.data.signals[channel].setLabel(ch.label)
+            self.data.signals[channel].setUnit(ch.unit)
         self.applyButton.clearFocus()
 
         self.plotArea.replotAllsignals()
@@ -65,8 +66,8 @@ class signalPropsTab(signalTabWidget):
     def __init__(self, colLabels, colSizes, colLabelsOffset):
         signalTabWidget.__init__(self, colLabels, colSizes, colLabelsOffset)
 
-    def addSignal(self, channel, label='name', sigType=None):
-        signal = channelSettings(channel, label, sigType, self.colSizes)
+    def addSignal(self, channel, label='name', unit ='cm/s',sigType=None):
+        signal = channelSettings(channel, label, unit, sigType, self.colSizes)
         self.vbox.addWidget(signal)
         self.channels.append(signal)
         self.nChannels = len(self.channels)
@@ -74,10 +75,11 @@ class signalPropsTab(signalTabWidget):
 
 class channelSettings(QtWidgets.QWidget):
 
-    def __init__(self, channel, label, sigType, colSizes):
+    def __init__(self, channel, label, unit, sigType, colSizes):
         QtWidgets.QWidget.__init__(self)
         self.channel = channel
         self.label = label
+        self.unit = unit
         self.sigType = sigType
         self.colSizes = colSizes
         self.initUI()
@@ -101,9 +103,17 @@ class channelSettings(QtWidgets.QWidget):
         labelSignal.returnPressed.connect(lambda: self.registerOptions('label'))
         labelSignal.textChanged.connect(lambda: self.registerOptions('label'))
 
+        # unit
+        unitSignal = QtWidgets.QLineEdit()
+        unitSignal.setText(self.unit)
+        unitSignal.setFixedWidth(self.colSizes[1])
+        unitSignal.editingFinished.connect(lambda: self.registerOptions('unit'))
+        unitSignal.returnPressed.connect(lambda: self.registerOptions('unit'))
+        unitSignal.textChanged.connect(lambda: self.registerOptions('unit'))
+
         # signalType
         signalType = QtWidgets.QComboBox()
-        signalType.setFixedWidth(self.colSizes[1])
+        signalType.setFixedWidth(self.colSizes[2])
         signalType.addItems([x[1] for x in signalTypesDict.values()])
         for key, value in signalTypesDict.items():
             if value[0] == self.sigType:
@@ -114,10 +124,13 @@ class channelSettings(QtWidgets.QWidget):
         # monta o layout
         hbox0.addWidget(channelSignal)
         hbox0.addWidget(labelSignal)
+        hbox0.addWidget(unitSignal)
         hbox0.addWidget(signalType)
 
     def registerOptions(self, typeOpt):
         if typeOpt == 'label':
             self.label = self.sender().text().replace(' ', '_')
+        if typeOpt == 'unit':
+            self.unit = self.sender().text()
         if typeOpt == 'sigType':
             self.sigType = signalTypesDict[self.sender().currentIndex()][0]

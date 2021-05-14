@@ -45,7 +45,7 @@ class plotArray(pg.GraphicsLayoutWidget):
     # where data_i is a numpy array or None
     def addNewPlot(self, yData=None, yUnit='adim', title=None, logY=False, legend=False):
 
-        if self.side.upper == 'R':
+        if self.side.upper() == 'R':
             self.xData = self.data.ARI_R.timeVals
         else:
             self.xData = self.data.ARI_L.timeVals
@@ -78,7 +78,7 @@ class plotArray(pg.GraphicsLayoutWidget):
 
     # yData is an list of numpy arrays
     def replot(self, plotNbr, yData):
-        self.axes[plotNbr].replot(None, yData)
+        self.axes[plotNbr].replot(None, yData,None)
 
         # self.axes[plotNbr].enableAutoRange(y=True) # 2019/july: pyqtgraph v.0.10.0  It seems logy plot have a bug that crashes when we reset Yrange. This line is a quick fix for the issue
 
@@ -92,10 +92,10 @@ class plotArray(pg.GraphicsLayoutWidget):
         # gets teh current mouse click position
 
     def getClickPosition(self):
-        channel = self.sender().channel
-        position = self.sender().mousePos
+        self.clickChannel = self.sender().channel
+        self.clickPosition = self.sender().mousePos
         # print('getClickPosition: channel: %d' % channel, ' position: %f,%f ' %(position[0],position[1]))
-        return [channel, position]
+        return [self.clickChannel, self.clickPosition]
 
     # converts X data to sample
     def convXtoSample(self, xVal, roundMethod='floor'):

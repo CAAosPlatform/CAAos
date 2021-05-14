@@ -160,7 +160,7 @@ class plotArrayBeat2Beat(pg.GraphicsLayoutWidget):
         self.xData = self.data.signals[0].beat2beatData.xData
         for s in self.data.signals:
             yData = [s.beat2beatData.max, s.beat2beatData.avg, s.beat2beatData.min]
-            self.axes[s.channel].replot(self.xData, yData)
+            self.axes[s.channel].replot(self.xData, yData,s.unit)
             self.axes[s.channel].mysetTitle('Ch %d) ' % s.channel + s.label)
 
     # class to be instanced in addNewPlot funcion member
