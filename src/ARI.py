@@ -310,7 +310,7 @@ class ARIanalysis():
         # Find integer ARI from error
         errorMin = np.amax(TiecksError)
         ARI_int = np.where(TiecksError == errorMin)[0][0]
-        print("integer ARI: %d " % ARI_int)
+        #print("integer ARI: %d " % ARI_int)
 
         # fractionary ARI
         ARI_temp = ARI_int
@@ -334,7 +334,7 @@ class ARIanalysis():
         else:
             ARI_frac = ARI_int
 
-        print("fractionary ARI: %f" % ARI_frac)
+        #print("fractionary ARI: %f" % ARI_frac)
 
         # REVERSE EXPANSION BY DECIMATION
         TiecksBestARI_int = TiecksVresponse[ARI_int][resampleFactor * np.array(range(self.nDuration), dtype=int)]

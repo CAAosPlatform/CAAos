@@ -38,8 +38,8 @@ class PSDestimator():
         self.Fs_Hz = samplingFrequency_Hz
         self.Ts = 1.0 / self.Fs_Hz
         self.overlap = overlap
-        self.segmentLength = int(self.Fs_Hz * segmentLength_s)
-        self.shiftSize = int((1.0 - self.overlap) * self.segmentLength)
+        self.segmentLength = round(self.Fs_Hz * segmentLength_s)
+        self.shiftSize = round((1.0 - self.overlap) * self.segmentLength)
         self.nSegments = int((len(self.dataX) - self.segmentLength) / self.shiftSize) + 1  # atention: in python 3.x, / is float division!
         self.windowType = windowType
 

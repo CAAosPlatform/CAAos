@@ -3,6 +3,7 @@
 import copy
 # -*- coding: utf-8 -*-
 import sys
+import glob
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -119,7 +120,8 @@ class transferFunctionAnalysis():
         temp = copy.deepcopy(signal)
 
         if self.nSegments > 15:
-            criticalValue = ARsetup.cohThresholdDict[self.CohCutoffSignificanceLevel][15]
+            print('Warning:no coherence threshold defined for n>15 segments - all frequencies will be included') # from carNET's matlab code
+            criticalValue = 0.0
         else:
             criticalValue = ARsetup.cohThresholdDict[self.CohCutoffSignificanceLevel][self.nSegments]
         temp[self.coherence < criticalValue] = np.nan
@@ -284,48 +286,103 @@ if __name__ == '__main__':
         sys.stdout.write('Sorry! This program requires Python 3.x\n')
         sys.exit(1)
 
-    if False:
-        ABP = np.loadtxt('../codigoPedro/lixo_ABP.txt')
-        CBFv_L = np.loadtxt('../codigoPedro/lixo_CBF_L.txt')
-        samplingFrequency_Hz = 100
-    if True:
-        file='../../CARNet_software/tfa_sample_data_1.txt'
-        data = np.loadtxt(file, skiprows=1, delimiter='\t')
-        samplingFreq_Hz = 5
+    runAll = True
 
-        time = data[:,0]
-        ABP  = data[:,1]
-        CBFv_L = data[:,2]
-        CBFv_R = data[:,3]
-        samplingFrequency_Hz =1/np.mean(np.diff(time))
+    if not runAll:
+        if False:
+            ABP = np.loadtxt('../codigoPedro/lixo_ABP.txt')
+            CBFv_L = np.loadtxt('../codigoPedro/lixo_CBF_L.txt')
+            samplingFrequency_Hz = 100
+        if False:
+            file='../../CARNet_software/tfa_sample_data_1.txt'
+            data = np.loadtxt(file, skiprows=1, delimiter='\t')
 
-    overlap = 59.99 / 100  # overlap
-    segmentLength_s = 102.4
-    windowType = 'hann'
-    overlap_adjust = True
-    if overlap_adjust:
-        overlap = ovelapAdjustment(ABP.shape[0], segmentLength_s * samplingFrequency_Hz, overlap)
 
-    # Power spectrum Estimation
-    for side in ['L','R']:
-        if side =='L':
-            vData = CBFv_L
-        if side =='R':
-            vData = CBFv_R
-        welch = PSDestimator(ABP, vData, samplingFrequency_Hz, overlap, segmentLength_s, windowType, detrend=False)
-        welch.computeWelch()
-        welch.filterAll(filterType='rect', nTaps=2, keepFirst=True)
-        #welch.save(fileName='lixo_PSD.txt')
-        # Start TF analysis
-        TF = transferFunctionAnalysis(PSDdata=welch)
-        TF.computeH1()
+            time = data[:,0]
+            ABP  = data[:,1]
+            CBFv_L = data[:,2]
+            CBFv_R = data[:,3]
+            samplingFrequency_Hz =1/np.mean(np.diff(time))
 
-        TF.saveStatistics(fileName='lixo_TF_%s_stat.TF' % side, sideLabel=side, coheTreshold=True, remNegPhase=True, writeMode='w')
+        overlap = 59.99 / 100  # overlap
+        segmentLength_s = 102.4
+        windowType = 'hann'
+        overlap_adjust = True
+        if overlap_adjust:
+            overlap = ovelapAdjustment(ABP.shape[0], segmentLength_s * samplingFrequency_Hz, overlap)
 
-        #TF.save(fileName='lixo.TF', sideLabel='L', freqRange='ALL')
-        if True:
-            TF.savePlot(fileNamePrefix=None)
-        else:
-            TF.savePlot(fileNamePrefix='lixo', fileType='png', figDpi=250, fontSize=6)
-            TF.savePlot(fileNamePrefix='lixo', fileType='svg', figDpi=250, fontSize=6)
-            TF.savePlot(fileNamePrefix='lixo', fileType='pdf', figDpi=250, fontSize=6)
+        # Power spectrum Estimation
+        for side in ['L', 'R']:
+            if side == 'L':
+                vData = CBFv_L
+            if side == 'R':
+                vData = CBFv_R
+            welch = PSDestimator(ABP, vData, samplingFrequency_Hz, overlap, segmentLength_s, windowType, detrend=False)
+            welch.computeWelch()
+            welch.filterAll(filterType='rect', nTaps=2, keepFirst=True)
+            # welch.save(fileName='lixo_PSD.txt')
+            # Start TF analysis
+            TF = transferFunctionAnalysis(PSDdata=welch)
+            TF.computeH1()
+
+            TF.saveStatistics(fileName='lixo_TF_%s_stat.TF' % side, sideLabel=side, coheTreshold=True, remNegPhase=True, writeMode='w')
+
+            # TF.save(fileName='lixo.TF', sideLabel='L', freqRange='ALL')
+            if True:
+                TF.savePlot(fileNamePrefix=None)
+            else:
+                TF.savePlot(fileNamePrefix='lixo', fileType='png', figDpi=250, fontSize=6)
+                TF.savePlot(fileNamePrefix='lixo', fileType='svg', figDpi=250, fontSize=6)
+                TF.savePlot(fileNamePrefix='lixo', fileType='pdf', figDpi=250, fontSize=6)
+
+
+    if runAll:
+        with open('../../dataTestesTFA/outputCAAos.txt', 'w') as f:
+            for file in sorted(glob.glob('../../dataTestesTFA/*.csv')):
+                #file = '../../dataTestesTFA/P11BA1A1.csv'
+                datax = np.loadtxt(file, skiprows=8, delimiter=';')
+                samplingFreq_Hz = 5
+
+                f.write('%s;' % file)
+
+                time = datax[:,0]
+                ABP  = datax[:,7]
+                CBFv_L = datax[:,1]
+                CBFv_R = datax[:,4]
+                samplingFrequency_Hz =1/np.mean(np.diff(time))
+
+
+                overlap = 59.99 / 100  # overlap
+                segmentLength_s = 102.4
+                windowType = 'hann'
+                overlap_adjust = True
+                if overlap_adjust:
+                    overlap = ovelapAdjustment(ABP.shape[0], segmentLength_s * samplingFrequency_Hz, overlap)
+
+                # Power spectrum Estimation
+                for side in ['L','R']:
+                    if side =='L':
+                        vData = CBFv_L
+                    if side =='R':
+                        vData = CBFv_R
+                    welch = PSDestimator(ABP, vData, samplingFrequency_Hz, overlap, segmentLength_s, windowType, detrend=False)
+                    welch.computeWelch()
+                    welch.filterAll(filterType='rect', nTaps=2, keepFirst=True)
+                    #welch.save(fileName='lixo_PSD.txt')
+                    # Start TF analysis
+                    TF = transferFunctionAnalysis(PSDdata=welch)
+                    TF.computeH1()
+
+                    print('Saving TFA statistics...')
+
+                    f.write('SIDE=%s;' % side)
+                    for r in ['VLF', 'LF', 'HF']:
+                        [gain_avg, _, _, _] = TF.getGainStatistics(r, coheTreshold=True)
+                        [phas_avg, _, _, _] = TF.getPhaseStatistics(r, coheTreshold=True, remNegPhase=True)
+                        [cohe_avg, _, _, _] = TF.getCoherenceStatistics(r)
+
+                        f.write('%f;%f;%f;' % (gain_avg,phas_avg,cohe_avg))
+
+                f.write('\n')
+
+
