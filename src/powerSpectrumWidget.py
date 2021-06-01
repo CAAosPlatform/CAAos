@@ -10,7 +10,8 @@ from spectrumPlotWidget import plotArray, pyQtConf
 
 # dict format:  '#code' : (paramValue,'string name')
 windowTypeDict = {0: ('hann', 'Hann'), 1: ('rectangular', 'Rectangular'), 2: ('tukey', 'Tukey'), 3: ('hamming', 'Hamming')}
-filterTypeDict = {0: ('none', 'None'), 1: ('rect', 'Rectangular'), 2: ('triangular', 'Triangular')}
+#filterTypeDict = {0: ('none', 'None'), 1: ('rect', 'Rectangular'), 2: ('triangular', 'Triangular')}
+filterTypeDict = { 0: ('triangular', 'Triangular')}
 
 
 class powerSpectrumWidget(QtWidgets.QWidget):
@@ -93,14 +94,14 @@ class powerSpectrumWidget(QtWidgets.QWidget):
         formLayoutB.addRow('Detrend signals', detrend)
 
         # post processing filter
-        default = 2  # triangular
+        default = 0  # triangular
         self.filterType = filterTypeDict[default][0]
         filterTypeControl = QtWidgets.QComboBox()
         filterTypeControl.addItems([x[1] for x in filterTypeDict.values()])
         filterTypeControl.setCurrentIndex(default)
         filterTypeControl.currentIndexChanged.connect(lambda: self.registerOptions('filterType'))
 
-        formLayoutB.addRow('PSD filter type', filterTypeControl)
+        #formLayoutB.addRow('PSD filter type', filterTypeControl)
 
         # filter Ntaps
         default = 3
@@ -113,7 +114,7 @@ class powerSpectrumWidget(QtWidgets.QWidget):
         self.nTaps = default
         self.nTapsControl.valueChanged.connect(lambda: self.registerOptions('nTaps'))
 
-        formLayoutB.addRow('Number of taps', self.nTapsControl)
+        #formLayoutB.addRow('Number of taps', self.nTapsControl)
 
         # PSD button
         self.applyPSDButton = QtWidgets.QPushButton('Compute PSD')
@@ -199,6 +200,11 @@ class powerSpectrumWidget(QtWidgets.QWidget):
 
     # synchronize signals
     def applyPSDwelch(self):
+
+        # fixed as rectangular and Ntap=2 to match matlab code. Here I am filtering with filtfilt, resulting in a trinagular filter with Ntap=3
+        self.nTaps=2
+        self.filterType='rect'
+
         self.data.computePSDwelch(self.useB2B, self.overlap, self.segmentLength_s, self.windowType, self.detrend, filterType=self.filterType,
                                   nTapsFilter=self.nTaps)
         self.applyPSDButton.clearFocus()

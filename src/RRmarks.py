@@ -10,7 +10,8 @@ from customWidgets import signalTabWidget
 from signalPlotWidget import plotArray, pyQtConf, signalPlot
 
 # dict format:  '#code' : (paramValue,'string name')
-RRmethodDict = {0: ('md', 'MD'), 1: ('ampd', 'AMPD')}
+#RRmethodDict = {0: ('md', 'MD'), 1: ('ampd', 'AMPD')}
+RRmethodDict = {0: ('ampd', 'AMPD')}
 
 
 class signalRRmarksWidget(QtWidgets.QWidget):
@@ -35,7 +36,7 @@ class signalRRmarksWidget(QtWidgets.QWidget):
         hboxA.addLayout(formLayout)
 
         # RRmarks method
-        default = 1  # AMPD algorithm
+        default = 0  # AMPD algorithm
         self.RRmethod = RRmethodDict[default][0]
         RRMethodWidget = QtWidgets.QComboBox()
         # RRMethodWidget.setFixedWidth(100)
