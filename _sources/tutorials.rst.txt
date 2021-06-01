@@ -1,0 +1,12 @@
+
+Tutorials
+==========================
+
+The platform
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The CAAos platform was developed in Python 3 language, aiming for a concise, easy to use experience. It is available under GNU GPLv3 license on `Github <https://github.com/CAAosPlatform/CAAos>`_. The installation package and instructions are also available, together with a demo data of two subjects (one healthy control and one stroke patient data), allowing users to operate the platform and its functionalities.  Figure 1 presents the home screen of the platform once it is launched.
+
+    .. image:: ./images/Figura01.png
+       :width: 200px
+       :alt: Platform’s home screen
