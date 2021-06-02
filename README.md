@@ -1,4 +1,7 @@
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4891862.svg)](https://doi.org/10.5281/zenodo.4891862)
+
+
 Welcome to the official repository of CAAos Platform (Cerebral Autoregulation Assessment Open Source Platform)!
 
 <p align="center">
