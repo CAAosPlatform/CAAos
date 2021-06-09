@@ -66,34 +66,40 @@ class patientData():
         self.historySignals = []
         self.historyOperations = []
 
-        if extension.lower() in ['.exp', '.dat']:
+        if extension.lower() in ['.exp', '.dat', '.csv']:
             self.newJob(inputFile)
 
         if extension.lower() in ['.job']:
             self.loadJob(inputFile)
 
-    def newJob(self, inputFile_EXPDAT):
+    def newJob(self, inputFile):
         # creates a new job with the input data file. This function also loads data from the EXP and DAT  files
         # this function should be called only for preprocessing steps
-        self.EXPDATfileName = inputFile_EXPDAT
+        self.DATAfileName = inputFile
         # create operationsTree
         self.jobRootNode = ETree.Element('job')
         self.jobRootNode.set('version', self.getVersion())
 
         # create InputFile Element
-        [dir, filePrefix, extension] = tools.splitPath(self.EXPDATfileName)
-        tools.ETaddElement(self.jobRootNode, 'inputFile', text=filePrefix + extension, attribList=[['type', 'EXP_DAT']])
+        [dir, filePrefix, extension] = tools.splitPath(self.DATAfileName)
+
+        if extension.upper() in ['.EXP', '.DAT']:
+            self.DATAfileType = 'EXP_DAT'
+        if extension.upper() in ['.CSV']:
+            self.DATAfileType = 'CSV'
+
+        tools.ETaddElement(self.jobRootNode, 'inputFile', text=filePrefix + extension, attribList=[['type', self.DATAfileType]])
 
         # create a operations node for new operations
         self.createNewOperation()
 
-        self.loadEXPDATfile()
+        self.loadDATAfile()
 
     def loadJob(self, inputFile_Job):
         # parse JOB file into ETree
         parser = ETree.XMLParser(remove_blank_text=True)
         self.jobRootNode = ETree.parse(inputFile_Job, parser).getroot()
-        self.EXPDATfileName = self.dirName + tools.getElemValueXpath(self.jobRootNode, xpath='inputFile', valType='str')
+        self.DATAfileName = self.dirName + tools.getElemValueXpath(self.jobRootNode, xpath='inputFile', valType='str')
 
         self.createNewOperation()
 
@@ -103,7 +109,7 @@ class patientData():
             self.jobRootNode.remove(elem)
             self.importOperations(self.dirName + elem.text, pos, runOperations=False)
 
-        self.loadEXPDATfile()
+        self.loadDATAfile()
 
         # run all operations
         for elem in self.jobRootNode.xpath('operations/preprocessing'):
@@ -182,7 +188,7 @@ class patientData():
         self.PPoperationsNode = copy.deepcopy(self.historyOperations[-1])
         self.signals = copy.deepcopy(self.historySignals[-1])
 
-    def loadEXPDATHeader(self):
+    def loadDATAfileHeader(self):
         """
         Load header data from raw data files **.exp**, **.dat**.
 
@@ -205,14 +211,12 @@ class patientData():
 
         This function extracts only the following fields from the header
 
-        * Examination date
         * Sampling Rate
         * Number of channels
         * Channel info: label and unit
 
         **Notes**
 
-        * The examination date is stored as a :mod:`datetime` element in the attribute :attr:`examDate`.
         * The number of channels is stored in the attribute :attr:`nChannels`.
         * The sampling rate is stored in the attribute :attr:`samplingRate_Hz`. The value of this attribute is sent to instances of :class:`~signals.signal` after calling :meth:`loadData` and this attribute is removed after that
         * Channel labels and units are stored in the attribute :attr:`signalLabels` and :attr:`signalUnits`. The values of these attributes are sent to instances of :class:`~signals.signal` after calling :meth:`loadData`  and these attributes are removed after that
@@ -221,9 +225,7 @@ class patientData():
 
         >>> from patientData import patientData as pD
         >>> myCase=pD('data.EXP')
-        >>> myCase.loadEXPDATHeader()
-        >>> myCase.examDate
-        datetime.datetime(2015, 12, 31, 12, 5, 30)  # 31st Jan 2015 - 12:05:30
+        >>> myCase.loadDATAfileHeader()
         >>> myCase.samplingRate_Hz
         100.0
         >>> myCase.nChannels
@@ -234,36 +236,46 @@ class patientData():
         ['HH:mm:ss:ms', 'N', 'cm/s', 'cm/s', 'mV', 'mV']
 
         """
-        file = open(self.EXPDATfileName, 'r')
-        line = ''
-        self.sizeHeader = 0
+        with open(self.DATAfileName, 'r') as file:
+            if self.DATAfileType == 'EXP_DAT':
+                line = file.readline()
+                self.sizeHeader = 0
+                # extract examination date
+                if False:
+                    while not line.startswith('Examination'):
+                        line = file.readline()
+                        self.sizeHeader += 1
 
-        # extract examination date
-        while not line.startswith('Examination'):
-            line = file.readline()
-            self.sizeHeader += 1
+                    date = datetime.strptime(line[12:].split()[0], '%d:%m:%Y').date()
+                    time = datetime.strptime(line[12:].split()[1], '%H:%M:%S').time()
+                    delf.examDate = datetime.combine(date, time)  #: Examination Date.
 
-        date = datetime.strptime(line[12:].split()[0], '%d:%m:%Y').date()
-        time = datetime.strptime(line[12:].split()[1], '%H:%M:%S').time()
-        self.examDate = datetime.combine(date, time)  #: Examination Date.
+                # extract sampling frequency in Hz
+                while not line.startswith('Sampling Rate'):
+                    line = file.readline()
+                    self.sizeHeader += 1
 
-        # extract sampling frequency in Hz
-        while not line.startswith('Sampling Rate'):
-            line = file.readline()
-            self.sizeHeader += 1
+                self.samplingRate_Hz = float(line.split()[2].replace(',', '.').replace('Hz', ''))
 
-        self.samplingRate_Hz = float(line.split()[2].replace(',', '.').replace('Hz', ''))
+                # next 2 lines should contain labels and units
+                self.signalLabels = file.readline().rstrip().replace(' ', '_').replace('.', '').split('\t')
+                self.signalUnits = file.readline().rstrip().split('\t')
 
-        # next 2 lines should contain labels and units
-        self.signalLabels = file.readline().rstrip().replace(' ', '_').replace('.', '').split('\t')
-        self.signalUnits = file.readline().rstrip().split('\t')
+                self.nChannels = len(self.signalUnits) - 2
+                self.sizeHeader += 2
 
-        self.nChannels = len(self.signalUnits) - 2
-        self.sizeHeader += 2
+            if self.DATAfileType == 'CSV':
+                self.samplingRate_Hz = float(file.readline().rstrip().split(';')[1])
 
-        file.close()
+                # next 2 lines should contain labels and units
+                self.signalLabels = file.readline().rstrip().replace(' ', '_').replace('.', '').split(';')
+                self.signalUnits = file.readline().rstrip().split(';')
+                self.sizeHeader = 3
 
-    def loadEXPDATfile(self):
+                self.nChannels = len(self.signalUnits)
+
+
+    def loadDATAfile(self):
         """
         Loads patient data from raw data files **.EXP**, **.DAT**.
 
@@ -300,20 +312,27 @@ class patientData():
         -------------------------------
 
         """
-        self.loadEXPDATHeader()
-        # create dtype of the file
-        dtypes = ('U11', 'i4')  # col 0: time (11 char string)   col 1: frame (32 bit int)
-        dtypes = dtypes + ('f8',) * self.nChannels  # the other columns will be treated as float (8bits)
+        self.loadDATAfileHeader()
 
-        rawData = np.genfromtxt(self.EXPDATfileName, delimiter=None, skip_header=self.sizeHeader, autostrip=True, names=','.join(self.signalLabels),
-                                dtype=dtypes)
+        if self.DATAfileType == 'EXP_DAT':
+            # create dtype of the file
+            dtypes = ('U11', 'i4')  # col 0: time (11 char string)   col 1: frame (32 bit int)
+            dtypes = dtypes + ('f8',) * self.nChannels  # the other columns will be treated as float (8bits)
 
-        nPoints = len(rawData)
+            rawData = np.genfromtxt(self.DATAfileName, delimiter=None, skip_header=self.sizeHeader, autostrip=True, names=','.join(self.signalLabels),
+                                    dtype=dtypes)
+
+        if self.DATAfileType == 'CSV':
+            # create dtype of the file
+            dtypes = ('f8',) * self.nChannels  # the other columns will be treated as float (8bits)
+
+            rawData = np.genfromtxt(self.DATAfileName, delimiter=';', skip_header=self.sizeHeader, autostrip=True, names=','.join(self.signalLabels),
+                                    dtype=dtypes)
 
         self.signals = []
         for i in range(self.nChannels):
-            label = self.signalLabels[i + 2]
-            newSignal = signal(channel=i, label=label, unit=self.signalUnits[i + 2], data=rawData[label], samplingRate_Hz=self.samplingRate_Hz,
+            label = self.signalLabels[i]
+            newSignal = signal(channel=i, label=label, unit=self.signalUnits[i], data=rawData[label], samplingRate_Hz=self.samplingRate_Hz,
                                operationsXML=self.PPoperationsNode)
             self.signals.append(newSignal)
 
@@ -573,43 +592,8 @@ class patientData():
         >>> myCase.findRRmarks(refChannel=2,method='ampd') # find RR marks with channel 2 as reference and ampd method
         >>> myCase.getBeat2beat(resampleRate_Hz=5.0,resampleMethod='cubic') # extract beat-to beat data and resample at 5Hz
         >>>
-        >>> myCase.saveOperations(fileName='/full/path/output1.PPO')
+        >>> myCase.saveJob(fileName='/full/path/output1.PPO')
 
-        The resulting **.PPO** of this example is::
-
-            <?xml version="1.0" ?>
-            <patient examDate="2016-06-30 13:07:47" file="data.EXP" nChannels="4" sizeHeader="6" version="0.1">
-                <resample>
-                    <sampleRate unit="Hz">100</sampleRate>
-                    <method>quadratic</method>
-                    <channel>0</channel>
-                </resample>
-                <resample>
-                    <sampleRate unit="Hz">100</sampleRate>
-                    <method>quadratic</method>
-                    <channel>1</channel>
-                </resample>
-                <resample>
-                    <sampleRate unit="Hz">100</sampleRate>
-                    <method>quadratic</method>
-                    <channel>2</channel>
-                </resample>
-                <resample>
-                    <sampleRate unit="Hz">100</sampleRate>
-                    <method>quadratic</method>
-                    <channel>3</channel>
-                </resample>
-                <findRRmarks>
-                    <refChannel>2</refChannel>
-                    <method>ampd</method>
-                    <findPeaks>True</findPeaks>
-                    <findValleys>False</findValleys>
-                </findRRmarks>
-                <beat2beat>
-                    <resampleMethod>cubic</resampleMethod>
-                    <resampleRate_Hz>5.0</resampleRate_Hz>
-                </beat2beat>
-            </patient>
 
         """
 

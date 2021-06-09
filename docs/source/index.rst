@@ -19,44 +19,23 @@ CAAos is an unified open source, cross-platform toolbox written in Python3 for p
 Contents:
 ==========================================
 
+   
 .. toctree::
    :caption: Tutorials
-   :maxdepth: 2
+   :maxdepth: 3
 
    ./tutorials.rst
 
 
-`Main Features`_
+.. toctree::
+   :caption: File formats
+   :maxdepth: 3
 
-`Installation and requirements`_
-
-`Preprocessing Operations (.PPO) file format`_
-
-`Module definitions`_
-
-`Indices and tables`_
-
-Installation and requirements
-==========================================
-
-.. warning:: Installation instructions here
-
-
-.. _ppo_file_format_label:
-
-Preprocessing Operations (.PPO) file format
-===========================================
-
-.. warning:: PPO file format here
-
-
-        All the operations applied are stored in :attr:`operationsXML`, a :mod:`xml.etree.ElementTree` instance. This function saves all operations stored to a text file. This allows for re-run the analysis on the same file, or apply the same set of operations to different cases.
-
+   ./fileFormats.rst
 
 Module definitions
 ==================
 
-In this section all modules will be described
 
 patientData
 ----------------------
