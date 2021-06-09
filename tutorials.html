@@ -42,6 +42,7 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="File Formats" href="fileFormats.html" />
     <link rel="prev" title="Welcome to CAAos Platform’s documentation!" href="index.html" /> 
 </head>
 
@@ -94,9 +95,32 @@
               <p class="caption"><span class="caption-text">Tutorials</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorials</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#the-platform">The platform</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#main-screen">Main screen</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#the-platform">The platform</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#menu-entries">Menu Entries</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#usage">Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#data-collection">Data collection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#preprocessing-toolbox">Preprocessing toolbox</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#creating-and-loading-a-job">Creating and loading a job</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#labels-types">Labels/Types</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#resample-calibrate">Resample/Calibrate</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sync-filter">Sync/Filter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#artefact-removal">Artefact Removal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#r-r-peak-detection">R-R peak detection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#beat-to-beat-surrogate-signal">Beat-to-beat surrogate signal</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#saving-data">Saving data</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption"><span class="caption-text">File formats</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fileFormats.html">File Formats</a></li>
 </ul>
 
             
@@ -166,12 +190,229 @@
             
   <div class="section" id="tutorials">
 <h1>Tutorials<a class="headerlink" href="#tutorials" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="main-screen">
+<h2>Main screen<a class="headerlink" href="#main-screen" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="the-platform">
-<h2>The platform<a class="headerlink" href="#the-platform" title="Permalink to this headline">¶</a></h2>
-<p>The CAAos platform was developed in Python 3 language, aiming for a concise, easy to use experience. It is available under GNU GPLv3 license on <a class="reference external" href="https://github.com/CAAosPlatform/CAAos">Github</a>. The installation package and instructions are also available, together with a demo data of two subjects (one healthy control and one stroke patient data), allowing users to operate the platform and its functionalities.  Figure 1 presents the home screen of the platform once it is launched.</p>
+<h3>The platform<a class="headerlink" href="#the-platform" title="Permalink to this headline">¶</a></h3>
+<p>The CAAos platform was developed in Python 3 language, aiming for a concise, easy to use experience.
+It is available under GNU GPLv3 license on <a class="reference external" href="https://github.com/CAAosPlatform/CAAos">Github</a>.
+The installation package and instructions are also available, together with a demo data of two subjects (one healthy control and one stroke patient data), allowing users to operate the platform and its functionalities. <a class="reference internal" href="#fig1"><span class="std std-ref">Figure 1</span></a>  presents the home screen of the platform once it is launched.</p>
 <blockquote>
-<div><a class="reference internal image-reference" href="_images/Figura01.png"><img alt="Platform’s home screen" src="_images/Figura01.png" style="width: 800px;" /></a>
+<div><div class="figure align-center" id="id1">
+<span id="fig1"></span><a class="reference internal image-reference" href="_images/Figura01.png"><img alt="Platform's home screen" src="_images/Figura01.png" style="width: 800px;" /></a>
+<p class="caption"><span class="caption-text">Figure 1: Platform’s home screen</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+</div>
 </div></blockquote>
+</div>
+<div class="section" id="menu-entries">
+<h3>Menu Entries<a class="headerlink" href="#menu-entries" title="Permalink to this headline">¶</a></h3>
+<dl>
+<dt>There are three main menu entries in the toolbar  inside the home screen</dt><dd><p>(see <a class="reference internal" href="#fig2"><span class="std std-ref">Figure 2</span></a>), being them:</p>
+<ol class="arabic">
+<li><p><strong>File:</strong> This tab enables the user to exit the platform;</p></li>
+<li><p><strong>Toolboxes:</strong> This menu entry allows the user to initiate the patient’s autoregulation analysis by first performing the preprocessing steps, as described in 2.2, and then the cerebral autoregulation analysis;</p></li>
+<li><p><strong>Help:</strong> This menu entry contains information about the platform, version, licenses, credits and authors.</p>
+<div class="figure align-center" id="id2">
+<span id="fig2"></span><a class="reference internal image-reference" href="_images/Figura02.png"><img alt="Indication of the main tabs" src="_images/Figura02.png" style="width: 800px;" /></a>
+<p class="caption"><span class="caption-text">Figure 2: Indication of the main tabs of the platform.</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+</div>
+</li>
+</ol>
+</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="data-collection">
+<h3>Data collection<a class="headerlink" href="#data-collection" title="Permalink to this headline">¶</a></h3>
+<p>Before initiating CAAos platform, the user needs to collect the subject’s signals.
+The signals are the cerebral blood flow velocity (CBFv) and arterial blood pressure (ABP).
+Other signals such as end-tidal carbon dioxide (EtCO2) can also be uploaded.
+The first two signals are collected as presented below.</p>
+</div>
+<div class="section" id="preprocessing-toolbox">
+<h3>Preprocessing toolbox<a class="headerlink" href="#preprocessing-toolbox" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="creating-and-loading-a-job">
+<h4>Creating and loading a job<a class="headerlink" href="#creating-and-loading-a-job" title="Permalink to this headline">¶</a></h4>
+<p>Signal analysis starts with the preprocessing toolbox. This toolbox is accessible via Toolboxes menu entry, selecting “Preprocessing”.</p>
+<dl>
+<dt>The user is then requested to create a new job or load a previously created job file (see <a class="reference internal" href="#fig3"><span class="std std-ref">Figure 3</span></a>).</dt><dd><ul>
+<li><p><strong>New job:</strong> the platform will request the text file containing the subject’s data.</p></li>
+<li><p><strong>Load job:</strong> the user is asked to select the job file (.job) previously saved.</p>
+<blockquote>
+<div><div class="figure align-center" id="id3">
+<span id="fig3"></span><a class="reference internal image-reference" href="_images/Figura06.png"><img alt="Creating or Loading a .job file" src="_images/Figura06.png" style="width: 800px;" /></a>
+<p class="caption"><span class="caption-text">Figure 3: Creating or Loading a .job file in Preprocessing toolbox.</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
+</div>
+</div></blockquote>
+</li>
+</ul>
+</dd>
+</dl>
+<p>The platform will load and show the data, as demonstrated in <a class="reference internal" href="#fig4"><span class="std std-ref">Figure 4</span></a>.</p>
+<blockquote>
+<div><div class="figure align-center" id="id4">
+<span id="fig4"></span><a class="reference internal image-reference" href="_images/Figura07.png"><img alt="Illustration of the first tab of the platform" src="_images/Figura07.png" style="width: 800px;" /></a>
+<p class="caption"><span class="caption-text">Figure 4: Illustration of the first tab of the platform: Labels/Types.</span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
+</div>
+</div></blockquote>
+<p>At this point, the user can start the data preprocessing, which contains the following tabs</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Labels/types</p></li>
+<li><p>Resample/Calibrate</p></li>
+<li><p>Sync/Filter</p></li>
+<li><p>Artefact Removal</p></li>
+<li><p>RR detection</p></li>
+<li><p>Beat to beat</p></li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="labels-types">
+<h4>Labels/Types<a class="headerlink" href="#labels-types" title="Permalink to this headline">¶</a></h4>
+<p>When the Preprocessing toolbox opens, it will automatically show the Labels/Types tab, as represented in <a class="reference internal" href="#fig4"><span class="std std-ref">Figure 4</span></a> and <a class="reference internal" href="#fig5"><span class="std std-ref">Figure 5</span></a>. On the column “Labels” (<a class="reference internal" href="#fig5"><span class="std std-ref">Figure 5</span></a>), the user will see the provisory name of the channels read automatically from the input data heading. In this stage, the user can label the signals following his/her preference. It is presented below an example of labeling the signals.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Channel 0:</strong> Middle Cerebral Artery of the left cerebral hemisphere (Label: CBFv_Left)</p></li>
+<li><p><strong>Channel 1:</strong> Middle Cerebral Artery of the right cerebral hemisphere (Label: CBFv_Right)</p></li>
+<li><p><strong>Channel 2:</strong> Arterial Blood Pressure (Label: ABP)</p></li>
+<li><p><strong>Channel 3:</strong> End-Tidal Carbon Dioxide (Label: ETCO2)</p></li>
+</ul>
+</div></blockquote>
+<p>After labeling the signals, the user can select the signals’ unit and then the “Signal Type”. The last columns, Signal Type, is a preconfigured named list, to allow the CAAos platform identify the signals to the cerebral autoregulation analysis.</p>
+<blockquote>
+<div><div class="figure align-center" id="id5">
+<span id="fig5"></span><a class="reference internal image-reference" href="_images/Figura08.png"><img alt="Example of indication of the column signal type" src="_images/Figura08.png" style="width: 800px;" /></a>
+<p class="caption"><span class="caption-text">Figure 5: Example of indication of the column signal type.</span><a class="headerlink" href="#id5" title="Permalink to this image">¶</a></p>
+</div>
+</div></blockquote>
+<p><strong>Observation:</strong> Changing the unit will not change the numeric values. This is just a label used to show the results. For changing the unit, please see Resample/Calibrate tab.</p>
+<p>The changes will be recorded when the user click on “Apply” button. The plots will be updated when the user click ‘Apply’ (<a class="reference internal" href="#fig6"><span class="std std-ref">Figure 6</span></a>). To improve signal visualization, the user can zoom in and zoom out the graphics by using the mouse’s cursor.</p>
+<blockquote>
+<div><div class="figure align-center" id="id6">
+<span id="fig6"></span><a class="reference internal image-reference" href="_images/Figura09.png"><img alt="Graphics of the labeled signals" src="_images/Figura09.png" style="width: 800px;" /></a>
+<p class="caption"><span class="caption-text">Figure 6: Graphics of the labeled signals.</span><a class="headerlink" href="#id6" title="Permalink to this image">¶</a></p>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="resample-calibrate">
+<h4>Resample/Calibrate<a class="headerlink" href="#resample-calibrate" title="Permalink to this headline">¶</a></h4>
+<p>Once the settings of Labels/Types is performed, the user can move to the next tab “Resample/Calibrate”, as presented in the <a class="reference internal" href="#fig7"><span class="std std-ref">Figure 7</span></a>. In this tab, the user will be able to configure the following settings:</p>
+<blockquote>
+<div><blockquote>
+<div><div class="figure align-center" id="id7">
+<span id="fig7"></span><a class="reference internal image-reference" href="_images/Figura10.png"><img alt="Illustration of the tab Resample/Calibrate" src="_images/Figura10.png" style="width: 800px;" /></a>
+<p class="caption"><span class="caption-text">Figure 7: Illustration of the tab Resample/Calibrate with indication of the tools.</span><a class="headerlink" href="#id7" title="Permalink to this image">¶</a></p>
+</div>
+</div></blockquote>
+<ol class="arabic simple">
+<li><p><strong>Sampling Frequency Type:</strong> the user may choose among Minimum, Maximum or Customized sampling frequency. Since ABP and CBFv are recorded from different equipments, the sampling frequency can be different between them. See further details below in the “Background” subsection”;</p></li>
+<li><p><strong>Resampling interpolation method:</strong> the available methods of interpolation are Zero, Linear, Quadratic or Cubic;</p></li>
+<li><p><strong>Sampling frequency:</strong> the CARNet [1] also suggests that sampling frequency of 100 Hz, then user can select “custom” and then define the sampling frequency value;</p></li>
+</ol>
+</div></blockquote>
+<p>When this procedure is done, the user can click on “Resample”.</p>
+<blockquote>
+<div><ol class="arabic simple" start="4">
+<li><p><strong>Signal calibration:</strong> the user may calibrate the signals individually, in special the ABP signal (if the user also measured ABP with another equipment simultaneously, such a sphygmomanometer, prior the beat-to-beat ABP recording). To calibrate a signal, the user need to inform minimum and maximum values. Calibration methods include “Absolute” and “5/95 percentile” and it can be applied to a signal window or to the entire signal data. The user must click on “Calibrate” to finalize the procedure.</p></li>
+</ol>
+</div></blockquote>
+</div>
+<div class="section" id="sync-filter">
+<h4>Sync/Filter<a class="headerlink" href="#sync-filter" title="Permalink to this headline">¶</a></h4>
+<p>This tab (<a class="reference internal" href="#fig8"><span class="std std-ref">Figure 8</span></a>) provides tools for synchronization and filtration the signals. Synchronization allows performing the synchronization between all signals, since they are acquired using different devices and delays might be present. Filtering is used to remove high frequency noise.</p>
+<blockquote>
+<div><ul>
+<li><p><strong>Highlight 1:</strong> the user can select what settings will be applied to each channel, synchronization and/or filtering.</p></li>
+<li><p><strong>Highlight 2:</strong> apply synchronization to the selected channels.</p></li>
+<li><p><strong>Highlight 3:</strong> apply the digital filter to the selected channels.</p></li>
+<li><p>Sync Methods: select the method between “Correlation” or “Fixed ABP delay”. The second option is the most applied.</p></li>
+<li><p>ABP delay: Time delay between ABP and other signals. The timing placed here depends on the equipment that is used to do the ABP reading.</p></li>
+<li><p>Filter Type: select the type among “Moving Average”, “Median” and “Butterworth”.</p>
+<blockquote>
+<div><div class="figure align-center" id="id8">
+<span id="fig8"></span><a class="reference internal image-reference" href="_images/Figura16.png"><img alt="Illustration of tab Sync/Filter" src="_images/Figura16.png" style="width: 800px;" /></a>
+<p class="caption"><span class="caption-text">Figure 8: Illustration of tab Sync/Filter.</span><a class="headerlink" href="#id8" title="Permalink to this image">¶</a></p>
+</div>
+</div></blockquote>
+</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="artefact-removal">
+<h4>Artefact Removal<a class="headerlink" href="#artefact-removal" title="Permalink to this headline">¶</a></h4>
+<p>All signals can be visually inspected to identify artefacts and noise. These can be removed following these general steps (<a class="reference internal" href="#fig9"><span class="std std-ref">Figure 9</span></a>):</p>
+<blockquote>
+<div><ol class="arabic">
+<li><p>The user visually inspects all the recorded data and identity the artefact. Here the user can zomm in/out with the mouse wheel and pan to the sides by left-clicking and holding while moving to the sides. (Highlight 1 in <a class="reference internal" href="#fig9"><span class="std std-ref">Figure 9</span></a>)</p></li>
+<li><p>The user chooses <em>Region Type</em> and <em>Method</em> and click on <em>New selection</em> button to select the area to be excluded (Highlight 2 in <a class="reference internal" href="#fig9"><span class="std std-ref">Figure 9</span></a>). A window highlight will appear over the signals.</p></li>
+<li><p>The user can adjust the window size to cover the region of the artefact by moving the window limits to the desired positions.</p></li>
+<li><p>The user click on <em>Remove</em> to clear the artefact.</p>
+<div class="figure align-center" id="id9">
+<span id="fig9"></span><a class="reference internal image-reference" href="_images/Figura18.png"><img alt="Illustration of Artefact Removal tab" src="_images/Figura18.png" style="width: 800px;" /></a>
+<p class="caption"><span class="caption-text">Figure 9: Illustration of Artefact Removal tab.</span><a class="headerlink" href="#id9" title="Permalink to this image">¶</a></p>
+</div>
+</li>
+</ol>
+</div></blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><strong>Caution:</strong> Removing large ranges of the signals can compromise the autoregulation analysis.</p>
+</div>
+<p>Three methods can be used to remove signal artefacts.</p>
+<blockquote>
+<div><ul>
+<li><p><strong>Interpolation:</strong> Signals contained in the selected window is replaced by a linear segment connecting the ends. It is indicated to remove small artefacts.</p>
+<div class="figure align-center" id="id10">
+<span id="fig10"></span><a class="reference internal image-reference" href="_images/Figura20.png"><img alt="Interpolation method" src="_images/Figura20.png" style="width: 800px;" /></a>
+<p class="caption"><span class="caption-text">Figure 10: Interpolation method.</span><a class="headerlink" href="#id10" title="Permalink to this image">¶</a></p>
+</div>
+</li>
+<li><p><strong>Crop:</strong> This method deletes the selection.</p>
+<div class="figure align-center" id="id11">
+<span id="fig11"></span><a class="reference internal image-reference" href="_images/Figura19.png"><img alt="Crop method" src="_images/Figura19.png" style="width: 800px;" /></a>
+<p class="caption"><span class="caption-text">Figure 11: Crop method.</span><a class="headerlink" href="#id11" title="Permalink to this image">¶</a></p>
+</div>
+</li>
+<li><p><strong>Join Peaks:</strong> This method is similar to <em>crop</em> method. However the selection is extended to complete a cardiac cycle. It is indicated to remove larger artefacts.</p>
+<div class="figure align-center" id="id12">
+<span id="fig12"></span><a class="reference internal image-reference" href="_images/Figura21.png"><img alt="Join Peaks method" src="_images/Figura21.png" style="width: 800px;" /></a>
+<p class="caption"><span class="caption-text">Figure 12: Join Peaks method. Note that the selection window is extended to the right to enclose a complete signal.</span><a class="headerlink" href="#id12" title="Permalink to this image">¶</a></p>
+</div>
+</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="r-r-peak-detection">
+<h4>R-R peak detection<a class="headerlink" href="#r-r-peak-detection" title="Permalink to this headline">¶</a></h4>
+<p>The platform finds the systolic peaks from the ABP signal. The detection employs the automatic multiscale-based peak detection (AMPD). Once the user clicks the button <em>Find RR Marks</em>, The peaks are presented as red dots (<a class="reference internal" href="#fig13"><span class="std std-ref">Figure 13</span></a>).</p>
+<p>The user can add or remove any marks with <em>Add Mark</em> and <em>Remove Mark</em> buttons. The plot on the top right show the heart rate of the patient and can be used to identify missing or extra R-R marks.</p>
+<blockquote>
+<div><div class="figure align-center" id="id13">
+<span id="fig13"></span><a class="reference internal image-reference" href="_images/Figura22.png"><img alt="Illustration of RR detection tab." src="_images/Figura22.png" style="width: 800px;" /></a>
+<p class="caption"><span class="caption-text">Figure 13: Illustration of RR detection tab.</span><a class="headerlink" href="#id13" title="Permalink to this image">¶</a></p>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="beat-to-beat-surrogate-signal">
+<h4>Beat-to-beat surrogate signal<a class="headerlink" href="#beat-to-beat-surrogate-signal" title="Permalink to this headline">¶</a></h4>
+<dl>
+<dt>The last tab of the preprocessing module generates the surrogate beat-to-beat from the loaded signals. To generate the beat-to-beat signals, an upsampling is needed for equidistant sampling intervals and to preserve the relevant frequency range components of cerebral autoregulation.</dt><dd><p>CARNet[1] suggests spline (third-order piecewise polinomials) interpolation with minimum re-sampling frequency of 4 Hz. After the settings, user needs press the button <em>Extract beat-to-beat</em> and the platform will present the beat-to-beat signals (<a class="reference internal" href="#fig13"><span class="std std-ref">Figure 13</span></a>). The user also needs to press the button “Filter” to visualize the signals filtered.</p>
+<blockquote>
+<div><div class="figure align-center" id="id14">
+<span id="fig14"></span><a class="reference internal image-reference" href="_images/Figura23.png"><img alt="Illustration of beat-to-beat tab." src="_images/Figura23.png" style="width: 800px;" /></a>
+<p class="caption"><span class="caption-text">Figure 14: Illustration of beat-to-beat tab.</span><a class="headerlink" href="#id14" title="Permalink to this image">¶</a></p>
+</div>
+</div></blockquote>
+</dd>
+</dl>
+</div>
+<div class="section" id="saving-data">
+<h4>Saving data<a class="headerlink" href="#saving-data" title="Permalink to this headline">¶</a></h4>
+<p>At any point the user can save the job file and/or the processed signals using <em>Save Job</em>, <em>Save Signals</em> buttons on top. If beat-to-beat data is also created, the user can also save them via <em>Save beat-to-beat</em>.</p>
+</div>
+</div>
 </div>
 </div>
 
@@ -181,6 +422,7 @@
           </div>
           <footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="fileFormats.html" class="btn btn-neutral float-right" title="File Formats" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
         <a href="index.html" class="btn btn-neutral float-left" title="Welcome to CAAos Platform’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 

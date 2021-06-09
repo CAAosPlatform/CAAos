@@ -95,6 +95,10 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
 </ul>
+<p class="caption"><span class="caption-text">File formats</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fileFormats.html">File Formats</a></li>
+</ul>
 
             
           
@@ -165,41 +169,44 @@
 <h1>Welcome to CAAos Platform’s documentation!<a class="headerlink" href="#welcome-to-caaos-platform-s-documentation" title="Permalink to this headline">¶</a></h1>
 <a class="reference internal image-reference" href="_images/logo_800x591.png"><img alt="_images/logo_800x591.png" class="align-center" src="_images/logo_800x591.png" style="width: 800px;" /></a>
 <p>CAAos is an unified open source, cross-platform toolbox written in Python3 for processing and analysing cerebral autoregulation datasets from diverse clinical protocols and acquisition modalities. This is a new free software research tool that combines existing and novel methods for interactive visual inspection, batch processing and analysis of multichannel records. As open-source software, the source code is freely available for non-commercial use, reducing barriers to performing CA analysis, allowing inspection of the inner-workings of the algorithms and facilitating networked activities with common standards.</p>
+<a class="reference external image-reference" href="https://doi.org/10.5281/zenodo.4891862"><img alt="https://zenodo.org/badge/DOI/10.5281/zenodo.4891862.svg" src="https://zenodo.org/badge/DOI/10.5281/zenodo.4891862.svg" /></a>
 <div class="section" id="contents">
 <h2>Contents:<a class="headerlink" href="#contents" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Tutorials</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tutorials.html#the-platform">The platform</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html#main-screen">Main screen</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tutorials.html#the-platform">The platform</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorials.html#menu-entries">Menu Entries</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials.html#usage">Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tutorials.html#data-collection">Data collection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorials.html#preprocessing-toolbox">Preprocessing toolbox</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
 </div>
-<p><a href="#id3"><span class="problematic" id="id4">`Main Features`_</span></a></p>
-<p><a class="reference internal" href="#installation-and-requirements">Installation and requirements</a></p>
-<p><a class="reference internal" href="#preprocessing-operations-ppo-file-format">Preprocessing Operations (.PPO) file format</a></p>
-<p><a class="reference internal" href="#module-definitions">Module definitions</a></p>
-<p><a class="reference internal" href="#indices-and-tables">Indices and tables</a></p>
-</div>
-<div class="section" id="installation-and-requirements">
-<h2>Installation and requirements<a class="headerlink" href="#installation-and-requirements" title="Permalink to this headline">¶</a></h2>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>Installation instructions here</p>
-</div>
-</div>
-<div class="section" id="preprocessing-operations-ppo-file-format">
-<span id="ppo-file-format-label"></span><h2>Preprocessing Operations (.PPO) file format<a class="headerlink" href="#preprocessing-operations-ppo-file-format" title="Permalink to this headline">¶</a></h2>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>PPO file format here</p>
-<p>All the operations applied are stored in <code class="xref py py-attr docutils literal notranslate"><span class="pre">operationsXML</span></code>, a <a class="reference external" href="https://docs.python.org/3/library/xml.etree.elementtree.html#module-xml.etree.ElementTree" title="(in Python v3.9)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">xml.etree.ElementTree</span></code></a> instance. This function saves all operations stored to a text file. This allows for re-run the analysis on the same file, or apply the same set of operations to different cases.</p>
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">File formats</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fileFormats.html">File Formats</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="fileFormats.html#input-data-file-format">Input data file format</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fileFormats.html#exp-dat-file">EXP/DAT file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fileFormats.html#csv-file">CSV file</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="fileFormats.html#job-files">Job files</a></li>
+</ul>
+</li>
+</ul>
 </div>
 </div>
 <div class="section" id="module-definitions">
 <h2>Module definitions<a class="headerlink" href="#module-definitions" title="Permalink to this headline">¶</a></h2>
-<p>In this section all modules will be described</p>
 <div class="section" id="module-patientData">
 <span id="patientdata"></span><h3>patientData<a class="headerlink" href="#module-patientData" title="Permalink to this headline">¶</a></h3>
 <div class="admonition warning">
@@ -230,7 +237,7 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="patientData.patientData.newJob">
-<span class="sig-name descname"><span class="pre">newJob</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputFile_EXPDAT</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/patientData.html#patientData.newJob"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#patientData.patientData.newJob" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">newJob</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputFile</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/patientData.html#patientData.newJob"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#patientData.patientData.newJob" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -260,8 +267,8 @@
 <dd></dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="patientData.patientData.loadEXPDATHeader">
-<span class="sig-name descname"><span class="pre">loadEXPDATHeader</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/patientData.html#patientData.loadEXPDATHeader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#patientData.patientData.loadEXPDATHeader" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="patientData.patientData.loadDATAfileHeader">
+<span class="sig-name descname"><span class="pre">loadDATAfileHeader</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/patientData.html#patientData.loadDATAfileHeader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#patientData.patientData.loadDATAfileHeader" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load header data from raw data files <strong>.exp</strong>, <strong>.dat</strong>.</p>
 <p>This function is usually used in the begining to extract general information from the file. This function is automatically called from <code class="xref py py-meth docutils literal notranslate"><span class="pre">loadData()</span></code></p>
 <p><strong>Header format</strong></p>
@@ -279,14 +286,12 @@
 </div>
 <p>This function extracts only the following fields from the header</p>
 <ul class="simple">
-<li><p>Examination date</p></li>
 <li><p>Sampling Rate</p></li>
 <li><p>Number of channels</p></li>
 <li><p>Channel info: label and unit</p></li>
 </ul>
 <p><strong>Notes</strong></p>
 <ul class="simple">
-<li><p>The examination date is stored as a <a class="reference external" href="https://docs.python.org/3/library/datetime.html#module-datetime" title="(in Python v3.9)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">datetime</span></code></a> element in the attribute <code class="xref py py-attr docutils literal notranslate"><span class="pre">examDate</span></code>.</p></li>
 <li><p>The number of channels is stored in the attribute <code class="xref py py-attr docutils literal notranslate"><span class="pre">nChannels</span></code>.</p></li>
 <li><p>The sampling rate is stored in the attribute <code class="xref py py-attr docutils literal notranslate"><span class="pre">samplingRate_Hz</span></code>. The value of this attribute is sent to instances of <a class="reference internal" href="#signals.signal" title="signals.signal"><code class="xref py py-class docutils literal notranslate"><span class="pre">signal</span></code></a> after calling <code class="xref py py-meth docutils literal notranslate"><span class="pre">loadData()</span></code> and this attribute is removed after that</p></li>
 <li><p>Channel labels and units are stored in the attribute <code class="xref py py-attr docutils literal notranslate"><span class="pre">signalLabels</span></code> and <code class="xref py py-attr docutils literal notranslate"><span class="pre">signalUnits</span></code>. The values of these attributes are sent to instances of <a class="reference internal" href="#signals.signal" title="signals.signal"><code class="xref py py-class docutils literal notranslate"><span class="pre">signal</span></code></a> after calling <code class="xref py py-meth docutils literal notranslate"><span class="pre">loadData()</span></code>  and these attributes are removed after that</p></li>
@@ -294,9 +299,7 @@
 <p><strong>Example</strong></p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">patientData</span> <span class="kn">import</span> <span class="n">patientData</span> <span class="k">as</span> <span class="n">pD</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">myCase</span><span class="o">=</span><span class="n">pD</span><span class="p">(</span><span class="s1">&#39;data.EXP&#39;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">myCase</span><span class="o">.</span><span class="n">loadEXPDATHeader</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">myCase</span><span class="o">.</span><span class="n">examDate</span>
-<span class="go">datetime.datetime(2015, 12, 31, 12, 5, 30)  # 31st Jan 2015 - 12:05:30</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">myCase</span><span class="o">.</span><span class="n">loadDATAfileHeader</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">myCase</span><span class="o">.</span><span class="n">samplingRate_Hz</span>
 <span class="go">100.0</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">myCase</span><span class="o">.</span><span class="n">nChannels</span>
@@ -310,8 +313,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="patientData.patientData.loadEXPDATfile">
-<span class="sig-name descname"><span class="pre">loadEXPDATfile</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/patientData.html#patientData.loadEXPDATfile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#patientData.patientData.loadEXPDATfile" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="patientData.patientData.loadDATAfile">
+<span class="sig-name descname"><span class="pre">loadDATAfile</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/patientData.html#patientData.loadDATAfile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#patientData.patientData.loadDATAfile" title="Permalink to this definition">¶</a></dt>
 <dd><p>Loads patient data from raw data files <strong>.EXP</strong>, <strong>.DAT</strong>.</p>
 <p>This function is used to load data files into memory. This function calls <code class="xref py py-meth docutils literal notranslate"><span class="pre">loadHeader()</span></code> internally, so you don’t have to call it manually.</p>
 <p><strong>Notes</strong></p>
@@ -437,43 +440,7 @@ based on <a href="#id1"><span class="problematic" id="id2">:arg:`section`</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">myCase</span><span class="o">.</span><span class="n">findRRmarks</span><span class="p">(</span><span class="n">refChannel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;ampd&#39;</span><span class="p">)</span> <span class="c1"># find RR marks with channel 2 as reference and ampd method</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">myCase</span><span class="o">.</span><span class="n">getBeat2beat</span><span class="p">(</span><span class="n">resampleRate_Hz</span><span class="o">=</span><span class="mf">5.0</span><span class="p">,</span><span class="n">resampleMethod</span><span class="o">=</span><span class="s1">&#39;cubic&#39;</span><span class="p">)</span> <span class="c1"># extract beat-to beat data and resample at 5Hz</span>
 <span class="go">&gt;&gt;&gt;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">myCase</span><span class="o">.</span><span class="n">saveOperations</span><span class="p">(</span><span class="n">fileName</span><span class="o">=</span><span class="s1">&#39;/full/path/output1.PPO&#39;</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>The resulting <strong>.PPO</strong> of this example is:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>&lt;?xml version=&quot;1.0&quot; ?&gt;
-&lt;patient examDate=&quot;2016-06-30 13:07:47&quot; file=&quot;data.EXP&quot; nChannels=&quot;4&quot; sizeHeader=&quot;6&quot; version=&quot;0.1&quot;&gt;
-    &lt;resample&gt;
-        &lt;sampleRate unit=&quot;Hz&quot;&gt;100&lt;/sampleRate&gt;
-        &lt;method&gt;quadratic&lt;/method&gt;
-        &lt;channel&gt;0&lt;/channel&gt;
-    &lt;/resample&gt;
-    &lt;resample&gt;
-        &lt;sampleRate unit=&quot;Hz&quot;&gt;100&lt;/sampleRate&gt;
-        &lt;method&gt;quadratic&lt;/method&gt;
-        &lt;channel&gt;1&lt;/channel&gt;
-    &lt;/resample&gt;
-    &lt;resample&gt;
-        &lt;sampleRate unit=&quot;Hz&quot;&gt;100&lt;/sampleRate&gt;
-        &lt;method&gt;quadratic&lt;/method&gt;
-        &lt;channel&gt;2&lt;/channel&gt;
-    &lt;/resample&gt;
-    &lt;resample&gt;
-        &lt;sampleRate unit=&quot;Hz&quot;&gt;100&lt;/sampleRate&gt;
-        &lt;method&gt;quadratic&lt;/method&gt;
-        &lt;channel&gt;3&lt;/channel&gt;
-    &lt;/resample&gt;
-    &lt;findRRmarks&gt;
-        &lt;refChannel&gt;2&lt;/refChannel&gt;
-        &lt;method&gt;ampd&lt;/method&gt;
-        &lt;findPeaks&gt;True&lt;/findPeaks&gt;
-        &lt;findValleys&gt;False&lt;/findValleys&gt;
-    &lt;/findRRmarks&gt;
-    &lt;beat2beat&gt;
-        &lt;resampleMethod&gt;cubic&lt;/resampleMethod&gt;
-        &lt;resampleRate_Hz&gt;5.0&lt;/resampleRate_Hz&gt;
-    &lt;/beat2beat&gt;
-&lt;/patient&gt;
+<span class="gp">&gt;&gt;&gt; </span><span class="n">myCase</span><span class="o">.</span><span class="n">saveJob</span><span class="p">(</span><span class="n">fileName</span><span class="o">=</span><span class="s1">&#39;/full/path/output1.PPO&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 </dd></dl>
