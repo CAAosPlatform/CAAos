@@ -50,7 +50,7 @@ class signalRRmarksWidget(QtWidgets.QWidget):
         # apply button
         self.findPeaksButton = QtWidgets.QPushButton('Find RR marks')
         # findPeaksButton.setFixedWidth(120)
-        self.findPeaksButton.setSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
+        self.findPeaksButton.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
         self.findPeaksButton.setStyleSheet('background-color:rgb(192,255,208)')  # light green
         self.findPeaksButton.clicked.connect(self.findpeaksRRmarks)
         hboxB.addWidget(self.findPeaksButton)
@@ -59,7 +59,7 @@ class signalRRmarksWidget(QtWidgets.QWidget):
         self.addButton = QtWidgets.QPushButton('Add Mark')
         # self.addButton.setFixedWidth(120)
         self.addButton.setEnabled(False)
-        self.addButton.setSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
+        self.addButton.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
         self.addButton.clicked.connect(lambda: self.editRRmark('add'))
         hboxB.addWidget(self.addButton)
 
@@ -67,7 +67,7 @@ class signalRRmarksWidget(QtWidgets.QWidget):
         self.removeButton = QtWidgets.QPushButton('Remove Mark')
         # self.removeButton.setFixedWidth(120)
         self.removeButton.setEnabled(False)
-        self.removeButton.setSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
+        self.removeButton.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
         self.removeButton.clicked.connect(lambda: self.editRRmark('remove'))
         hboxB.addWidget(self.removeButton)
 

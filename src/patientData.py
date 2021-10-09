@@ -101,6 +101,13 @@ class patientData():
         self.jobRootNode = ETree.parse(inputFile_Job, parser).getroot()
         self.DATAfileName = self.dirName + tools.getElemValueXpath(self.jobRootNode, xpath='inputFile', valType='str')
 
+        [dir, filePrefix, extension] = tools.splitPath(self.DATAfileName)
+
+        if extension.upper() in ['.EXP', '.DAT']:
+            self.DATAfileType = 'EXP_DAT'
+        if extension.upper() in ['.CSV']:
+            self.DATAfileType = 'CSV'
+
         self.createNewOperation()
 
         # import operationsFile
@@ -239,7 +246,7 @@ class patientData():
         with open(self.DATAfileName, 'r') as file:
             if self.DATAfileType == 'EXP_DAT':
                 line = file.readline()
-                self.sizeHeader = 0
+                self.sizeHeader = 1
                 # extract examination date
                 if False:
                     while not line.startswith('Examination'):
@@ -252,8 +259,8 @@ class patientData():
 
                 # extract sampling frequency in Hz
                 while not line.startswith('Sampling Rate'):
-                    line = file.readline()
                     self.sizeHeader += 1
+                    line = file.readline()
 
                 self.samplingRate_Hz = float(line.split()[2].replace(',', '.').replace('Hz', ''))
 
@@ -321,6 +328,12 @@ class patientData():
 
             rawData = np.genfromtxt(self.DATAfileName, delimiter=None, skip_header=self.sizeHeader, autostrip=True, names=','.join(self.signalLabels),
                                     dtype=dtypes)
+
+            #remove first two columns of array (time stamp and sample #)
+            self.signalLabels=self.signalLabels[2:]
+            self.signalUnits=self.signalUnits[2:]
+            names = list(rawData.dtype.names)[2:]
+            rawData=rawData[names]
 
         if self.DATAfileType == 'CSV':
             # create dtype of the file

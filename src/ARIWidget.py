@@ -56,7 +56,7 @@ class ARIWidget(QtWidgets.QWidget):
         self.applyARIButton = QtWidgets.QPushButton('Compute ARI')
         self.applyARIButton.setFixedWidth(100)
         self.applyARIButton.setEnabled(False)
-        self.applyARIButton.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Preferred)
+        self.applyARIButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
         self.applyARIButton.setStyleSheet('background-color:rgb(192,255,208)')  # light green
         self.applyARIButton.clicked.connect(self.applyARI)
         hbox.addWidget(self.applyARIButton)
@@ -65,7 +65,7 @@ class ARIWidget(QtWidgets.QWidget):
         self.saveButton = QtWidgets.QPushButton('Save ARI data')
         self.saveButton.setFixedWidth(100)
         self.saveButton.setEnabled(False)
-        self.saveButton.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Preferred)
+        self.saveButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
         self.saveButton.setStyleSheet('background-color:rgb(192,255,208)')  # light green
         self.saveButton.clicked.connect(self.saveARI)
         hbox.addWidget(self.saveButton)
@@ -181,7 +181,7 @@ class ARIWidget(QtWidgets.QWidget):
 
         if self.data.hasARIdata_L or self.data.hasARIdata_R:
             resultFileName, selectedFilter = QtWidgets.QFileDialog.getSaveFileName(self, 'Save autoregulation index data as',
-                                                                                   self.data.dirName + self.data.filePrefix + fileExtension,
+                                                                                   self.data.dirName + self.data.filePrefix + '_ARI' + fileExtension,
                                                                                    'Autoregulation index (.ari) (*.ari);;'
                                                                                    'CSV (.csv) (*.csv);;'
                                                                                    'Numpy (.npy) (*npy);;')

@@ -33,7 +33,7 @@ class signalPropsWidget(QtWidgets.QWidget):
         # apply button
         self.applyButton = QtWidgets.QPushButton('Apply')
         self.applyButton.setFixedWidth(100)
-        self.applyButton.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Preferred)
+        self.applyButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
         self.applyButton.setStyleSheet('background-color:rgb(192,255,208)')  # light green
         self.applyButton.clicked.connect(self.applyProps)
         hbox.addWidget(self.applyButton)

@@ -68,7 +68,7 @@ class resampleCalibrateWidget(QtWidgets.QWidget):
         # apply button
         self.resampleButton = QtWidgets.QPushButton('Resample')
         self.resampleButton.setFixedWidth(100)
-        self.resampleButton.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Preferred)
+        self.resampleButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
         self.resampleButton.setStyleSheet('background-color:rgb(192,255,208)')  # light green
         self.resampleButton.clicked.connect(self.resampleSignals)
         hbox.addWidget(self.resampleButton)

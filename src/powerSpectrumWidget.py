@@ -77,7 +77,7 @@ class powerSpectrumWidget(QtWidgets.QWidget):
         # use B2B
         default = True
         self.useB2B = default
-        useB2B = QtGui.QCheckBox('', self)
+        useB2B = QtWidgets.QCheckBox('', self)
         # useB2B.setFixedWidth(30)
         useB2B.setChecked(self.useB2B)
         useB2B.stateChanged.connect(lambda: self.registerOptions('useB2B'))
@@ -87,7 +87,7 @@ class powerSpectrumWidget(QtWidgets.QWidget):
         # detrend
         default = False
         self.detrend = default
-        detrend = QtGui.QCheckBox('', self)
+        detrend = QtWidgets.QCheckBox('', self)
         detrend.setChecked(self.detrend)
         detrend.stateChanged.connect(lambda: self.registerOptions('detrend'))
 
@@ -119,7 +119,7 @@ class powerSpectrumWidget(QtWidgets.QWidget):
         # PSD button
         self.applyPSDButton = QtWidgets.QPushButton('Compute PSD')
         self.applyPSDButton.setFixedWidth(100)
-        self.applyPSDButton.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Preferred)
+        self.applyPSDButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
         self.applyPSDButton.setStyleSheet('background-color:rgb(192,255,208)')  # light green
         self.applyPSDButton.clicked.connect(self.applyPSDwelch)
         hbox.addWidget(self.applyPSDButton)
@@ -128,7 +128,7 @@ class powerSpectrumWidget(QtWidgets.QWidget):
         self.saveButton = QtWidgets.QPushButton('Save PSD data')
         self.saveButton.setFixedWidth(100)
         self.saveButton.setEnabled(False)
-        self.saveButton.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Preferred)
+        self.saveButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
         self.saveButton.setStyleSheet('background-color:rgb(192,255,208)')  # light green
         self.saveButton.clicked.connect(self.savePSD)
         hbox.addWidget(self.saveButton)

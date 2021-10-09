@@ -74,7 +74,7 @@ class signalSyncFilterWidget(QtWidgets.QWidget):
         # apply sync button
         self.applySyncButton = QtWidgets.QPushButton('Sync')
         self.applySyncButton.setFixedWidth(100)
-        self.applySyncButton.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Preferred)
+        self.applySyncButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
         self.applySyncButton.setStyleSheet('background-color:rgb(192,255,208)')  # light green
         self.applySyncButton.clicked.connect(self.applySync)
         hbox.addWidget(self.applySyncButton)
@@ -82,7 +82,7 @@ class signalSyncFilterWidget(QtWidgets.QWidget):
         # apply filter button
         self.applyFilterButton = QtWidgets.QPushButton('Filter')
         self.applyFilterButton.setFixedWidth(100)
-        self.applyFilterButton.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Preferred)
+        self.applyFilterButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
         self.applyFilterButton.setStyleSheet('background-color:rgb(192,255,208)')  # light green
         self.applyFilterButton.clicked.connect(self.applyFilter)
         hbox.addWidget(self.applyFilterButton)
@@ -206,13 +206,13 @@ class channelSettings(QtWidgets.QWidget):
         self.signalType.setFixedWidth(self.colSizes[1])
 
         # sync
-        syncSignal = QtGui.QCheckBox('', self)
+        syncSignal = QtWidgets.QCheckBox('', self)
         syncSignal.setFixedWidth(self.colSizes[2])
         syncSignal.setChecked(True)
         syncSignal.stateChanged.connect(lambda: self.registerContents('sync'))
 
         # filter
-        filterSignal = QtGui.QCheckBox('', self)
+        filterSignal = QtWidgets.QCheckBox('', self)
         filterSignal.setFixedWidth(self.colSizes[3])
         filterSignal.setChecked(False)
         filterSignal.stateChanged.connect(lambda: self.registerContents('filter'))

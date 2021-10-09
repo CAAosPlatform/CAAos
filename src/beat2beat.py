@@ -67,7 +67,7 @@ class signalBeat2beatWidget(QtWidgets.QWidget):
         # apply beat to beat
         self.applyBeatButton = QtWidgets.QPushButton('Extract\nbeat-to-beat')
         self.applyBeatButton.setFixedWidth(100)
-        self.applyBeatButton.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Preferred)
+        self.applyBeatButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
         self.applyBeatButton.setStyleSheet('background-color:rgb(192,255,208)')  # light green
         self.applyBeatButton.clicked.connect(self.applyBeat)
         hbox.addWidget(self.applyBeatButton)
@@ -76,7 +76,7 @@ class signalBeat2beatWidget(QtWidgets.QWidget):
         self.applyFilterButton = QtWidgets.QPushButton('Filter')
         self.applyFilterButton.setFixedWidth(100)
         self.applyFilterButton.setEnabled(False)
-        self.applyFilterButton.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Preferred)
+        self.applyFilterButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
         self.applyFilterButton.setStyleSheet('background-color:rgb(192,255,208)')  # light green
         self.applyFilterButton.clicked.connect(self.applyFilter)
         hbox.addWidget(self.applyFilterButton)
@@ -138,7 +138,7 @@ class plotArrayBeat2Beat(pg.GraphicsLayoutWidget):
 
     def __init__(self, patientData, nCols=1):
         super(plotArrayBeat2Beat, self).__init__()
-        self.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding))
+        self.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
         self.data = patientData
         self.PlotNbr = {}  # empty dictionary
         self.Nplots = 0

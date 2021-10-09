@@ -60,7 +60,7 @@ class artefactRemovalWidget(QtWidgets.QWidget):
         self.newButton = QtWidgets.QPushButton('New selection')
         self.newButton.setFixedWidth(100)
         self.newButton.setEnabled(False)
-        self.newButton.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Preferred)
+        self.newButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
         self.newButton.clicked.connect(self.newArtefactRegion)
         hbox.addWidget(self.newButton)
 
@@ -68,7 +68,7 @@ class artefactRemovalWidget(QtWidgets.QWidget):
         self.applyButton = QtWidgets.QPushButton('Apply')
         self.applyButton.setFixedWidth(100)
         self.applyButton.setEnabled(False)
-        self.applyButton.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Preferred)
+        self.applyButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
         self.applyButton.setStyleSheet('background-color:rgb(192,255,208)')  # light green
         self.applyButton.clicked.connect(self.removeArtefact)
         hbox.addWidget(self.applyButton)

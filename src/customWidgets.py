@@ -63,7 +63,7 @@ class TFAresultTable(QtWidgets.QWidget):
         self.colLabelsOffset = 10
         self.initUI()
         self.setFixedWidth(300)
-        self.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Preferred)
+        self.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
 
     def initUI(self):
         self.grid = QtWidgets.QGridLayout()
@@ -80,20 +80,20 @@ class TFAresultTable(QtWidgets.QWidget):
     def initTable(self):
         # columns
         for i in range(self.nCols):
-            text = QtGui.QLabel(self.colLabels[i], self)
+            text = QtWidgets.QLabel(self.colLabels[i], self)
             text.setAlignment(QtCore.Qt.AlignRight)
             self.grid.addWidget(text, 0, i + 1)
             text.setFixedWidth(50)
         # rows
         for i in range(self.nRows):
-            text = QtGui.QLabel(self.rowLabels[i], self)
+            text = QtWidgets.QLabel(self.rowLabels[i], self)
             text.setAlignment(QtCore.Qt.AlignLeft)
             self.grid.addWidget(text, i + 1, 0)
 
         # cels
         for i in range(self.nRows):
             for j in range(self.nCols):
-                text = QtGui.QLabel('{0:.3f}'.format(0), self)
+                text = QtWidgets.QLabel('{0:.3f}'.format(0), self)
                 text.setAlignment(QtCore.Qt.AlignRight)
                 self.grid.addWidget(text, i + 1, j + 1)
 
@@ -126,7 +126,7 @@ class ARIresultTable(QtWidgets.QWidget):
         self.colLabelsOffset = 5
         self.initUI()
         #self.setFixedWidth(700)
-        self.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Preferred)
+        self.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
 
     def initUI(self):
         vboxL = QtWidgets.QVBoxLayout()
@@ -136,7 +136,7 @@ class ARIresultTable(QtWidgets.QWidget):
         self.grid.setRowMinimumHeight(0, 10)
         self.grid.setColumnMinimumWidth(0, 20)
 
-        #self.bestFitLabel = QtGui.QLabel('Best fit: ', self)
+        #self.bestFitLabel = QtWidgets.QLabel('Best fit: ', self)
 
         vboxL.addLayout(self.grid)
         #vboxL.addWidget(self.bestFitLabel)
@@ -150,31 +150,31 @@ class ARIresultTable(QtWidgets.QWidget):
 
         # columns
         for i in range(self.nCols):
-            text = QtGui.QLabel(self.colLabels[i], self)
+            text = QtWidgets.QLabel(self.colLabels[i], self)
             text.setAlignment(QtCore.Qt.AlignRight)
             self.grid.addWidget(text, 0, i + 1)
             text.setFixedWidth(50)
 
         # rows
-        text = QtGui.QLabel('ARI:', self)
+        text = QtWidgets.QLabel('ARI:', self)
         text.setAlignment(QtCore.Qt.AlignRight)
         self.grid.addWidget(text, 0,0)
         text.setFixedWidth(50)
 
         for i in range(self.nRows):
-            text = QtGui.QLabel(self.rowLabels[i], self)
+            text = QtWidgets.QLabel(self.rowLabels[i], self)
             text.setAlignment(QtCore.Qt.AlignRight)
             self.grid.addWidget(text, i + 1, 0)
 
         # cels
         for i in range(self.nRows):
             for j in range(self.nCols):
-                text = QtGui.QLabel('{0:.2f}'.format(0), self)
+                text = QtWidgets.QLabel('{0:.2f}'.format(0), self)
                 text.setAlignment(QtCore.Qt.AlignRight)
                 self.grid.addWidget(text, i + 1, j + 1)
         #best Fit
-        self.grid.addWidget(QtGui.QLabel('Best Fit:', self), self.nRows+ 1, 0)
-        self.bestFitLabel = QtGui.QLabel('0', self)
+        self.grid.addWidget(QtWidgets.QLabel('Best Fit:', self), self.nRows+ 1, 0)
+        self.bestFitLabel = QtWidgets.QLabel('0', self)
         self.bestFitLabel.setAlignment(QtCore.Qt.AlignRight)
         self.grid.addWidget(self.bestFitLabel, self.nRows+ 1, 1)
 

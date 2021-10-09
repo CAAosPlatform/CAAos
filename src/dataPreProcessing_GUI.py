@@ -76,7 +76,7 @@ class dataPreProcessing_GUI(QtWidgets.QWidget):
         if self.data is not None:
             self.closeJob()
 
-        if True:
+        if False:
             self.fileName, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Select input data file', '', 'All (.exp .dat .csv) (*.EXP *.exp *.DAT '
                                                                                                          '*.dat *.csv *.CSV)')
         else:
@@ -334,8 +334,8 @@ class dataPreProcessing_GUI(QtWidgets.QWidget):
     def saveJob(self, fileName=None):
 
         self.statusBar.showMessage('Saving job data.')
-        choice = QtGui.QMessageBox.question(self, '', 'Merge operations into the file?', QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
-        if choice == QtGui.QMessageBox.Yes:
+        choice = QtWidgets.QMessageBox.question(self, '', 'Merge operations into the file?', QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+        if choice == QtWidgets.QMessageBox.Yes:
             merge = True
         else:
             merge = False

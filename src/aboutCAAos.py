@@ -7,7 +7,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from patientData import patientData
 
 
-class About(QtGui.QMainWindow):
+class About(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
         super(About, self).__init__(parent)
 

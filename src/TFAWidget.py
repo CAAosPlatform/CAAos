@@ -45,7 +45,7 @@ class TFAWidget(QtWidgets.QWidget):
         # coherence Treshold
         default = True
         self.coheTreshold = default
-        coheTreshControl = QtGui.QCheckBox('', self)
+        coheTreshControl = QtWidgets.QCheckBox('', self)
         # useB2B.setFixedWidth(30)
         coheTreshControl.setChecked(self.coheTreshold)
         coheTreshControl.stateChanged.connect(lambda: self.registerOptions('coheTresh'))
@@ -55,7 +55,7 @@ class TFAWidget(QtWidgets.QWidget):
         # negative Phase
         default = True
         self.removeNegPhase = default
-        negativePhaseControl = QtGui.QCheckBox('', self)
+        negativePhaseControl = QtWidgets.QCheckBox('', self)
         # useB2B.setFixedWidth(30)
         negativePhaseControl.setChecked(self.removeNegPhase)
         negativePhaseControl.stateChanged.connect(lambda: self.registerOptions('negativePhase'))
@@ -76,7 +76,7 @@ class TFAWidget(QtWidgets.QWidget):
         self.applyTFAButton = QtWidgets.QPushButton('Compute TFA')
         self.applyTFAButton.setFixedWidth(100)
         self.applyTFAButton.setEnabled(False)
-        self.applyTFAButton.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Preferred)
+        self.applyTFAButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
         self.applyTFAButton.setStyleSheet('background-color:rgb(192,255,208)')  # light green
         self.applyTFAButton.clicked.connect(self.applyTFA)
         hbox.addWidget(self.applyTFAButton)
@@ -85,7 +85,7 @@ class TFAWidget(QtWidgets.QWidget):
         self.saveButton = QtWidgets.QPushButton('Save TFA data')
         self.saveButton.setFixedWidth(100)
         self.saveButton.setEnabled(False)
-        self.saveButton.setSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Preferred)
+        self.saveButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
         self.saveButton.setStyleSheet('background-color:rgb(192,255,208)')  # light green
         self.saveButton.clicked.connect(self.saveTFA)
         hbox.addWidget(self.saveButton)

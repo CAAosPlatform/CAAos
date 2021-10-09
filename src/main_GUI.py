@@ -53,13 +53,13 @@ class GuiMain(QtWidgets.QMainWindow):
 
     def setWaterark(self):
         # create a label and add the logo
-        label = QtGui.QLabel(self)
+        label = QtWidgets.QLabel(self)
         label.setAlignment(QtCore.Qt.AlignCenter)
         pixmap = QtGui.QPixmap('./images/logo_800x591.png')  # .scaled(200, 200, QtCore.Qt.KeepAspectRatio)
         label.setPixmap(pixmap)
 
         # add transparecy to the image
-        effect = QtGui.QGraphicsOpacityEffect()
+        effect = QtWidgets.QGraphicsOpacityEffect()
         label.setGraphicsEffect(effect)
         effect.setOpacity(0.4)
 

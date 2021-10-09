@@ -5,7 +5,7 @@
 import math
 
 import numpy as np
-from PyQt5 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 import pyqtgraph as pg
 
@@ -198,7 +198,7 @@ class plotArray(pg.GraphicsLayoutWidget):
 
     def __init__(self, patientData, nCols=1):
         super(plotArray, self).__init__()
-        self.setSizePolicy(QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding))
+        self.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
         self.data = patientData
         self.PlotNbr = {}  # empty dictionary
         self.Nplots = 0
