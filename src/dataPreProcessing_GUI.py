@@ -76,7 +76,7 @@ class dataPreProcessing_GUI(QtWidgets.QWidget):
         if self.data is not None:
             self.closeJob()
 
-        if False:
+        if True:
             self.fileName, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Select input data file', '', 'All (.exp .dat .csv) (*.EXP *.exp *.DAT '
                                                                                                          '*.dat *.csv *.CSV)')
         else:
