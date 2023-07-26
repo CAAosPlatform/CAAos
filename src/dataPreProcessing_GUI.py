@@ -77,11 +77,12 @@ class dataPreProcessing_GUI(QtWidgets.QWidget):
             self.closeJob()
 
         if True:
-            self.fileName, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Select input data file', '', 'All (.exp .dat .csv) (*.EXP *.exp *.DAT '
-                                                                                                         '*.dat *.csv *.CSV)')
+            self.fileName, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Select input data file', '',
+                                                                     'All (.exp .dat .csv .PAR) (*.EXP *.exp *.DAT *.dat *.csv *.CSV *.PAR *.par)')
         else:
             print('LOAD de arquivo abreviado! ver dataPreProcessing_GUI.py, linha 64')
             self.fileName = '/home/fernando/servidor/programas/00_UFABC/ProjetoPosDocAngela/data/CG24HG.EXP'
+            self.fileName = '/home/fernando/servidor/programas/00_UFABC/ProjetoPosDocAngela/data/DPOC4CA1.PAR'
 
         if not self.fileName:
             return

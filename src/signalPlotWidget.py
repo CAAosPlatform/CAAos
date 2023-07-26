@@ -15,12 +15,12 @@ if darkTheme:
     pyQtConf = {  # Dark theme
         'backgroundColor': 'k', 'foregroundColor': 'w', 'textColor': (255, 255, 255),
         'plotColors': {'red': (255, 0, 0), 'green': (125, 221, 126), 'blue': (0, 170, 255), 'base': (255, 255, 255)},
-        'linearRegionBrush': pg.mkBrush((200, 200, 200, 100)), 'linearRegionPen': pg.mkPen(color=(255, 0, 0, 255)), 'plotLineWidth': 1.0,
+        'linearRegionBrush': pg.mkBrush((200, 200, 200, 100)), 'linearRegionPen': pg.mkPen(color=(255, 0, 0, 255)), 'plotLineWidth': 1.5,
         'peakMarkSymbol': 'o', 'peakMarkSize': 5, 'peakMarkColor': (255, 0, 0)}
 else:
     pyQtConf = {'backgroundColor': 'w', 'foregroundColor': 'k', 'textColor': (0, 0, 0),
                 'plotColors': {'red': (255, 0, 0), 'green': (120, 255, 90), 'blue': (0, 100, 200), 'base': (0, 0, 0)},
-                'linearRegionBrush': pg.mkBrush((50, 50, 50, 50)), 'linearRegionPen': pg.mkPen(color=(255, 0, 0, 255)), 'plotLineWidth': 1.0,
+                'linearRegionBrush': pg.mkBrush((50, 50, 50, 50)), 'linearRegionPen': pg.mkPen(color=(255, 0, 0, 255)), 'plotLineWidth': 1.5,
                 'peakMarkSymbol': 'o', 'peakMarkSize': 5, 'peakMarkColor': (255, 0, 0)}
 
 if pyQtConf['plotLineWidth'] == 1.0:
@@ -83,6 +83,11 @@ class signalPlot(pg.PlotItem):
         for i in range(len(self.signalCurve)):
             self.legend.addItem(self.signalCurve[i], self.yData[i][2])
 
+    def hLine(self, yVal=1.0, xInterval=[0, 1],legend=None):
+        self.plot(xInterval, yVal * np.ones(2), pen=pg.mkPen(color='r', width=1, style=QtCore.Qt.DashLine))
+        if legend is not None:
+            self.signalLegend(legend)
+
     # activates events for mouse interaction. USE this function ONLY after adding it to a scene!
     def activateMouseEvents(self):
         self.scene().sigMouseMoved.connect(self.mousePosition)
@@ -144,6 +149,20 @@ class signalPlot(pg.PlotItem):
             x = ['', ] * len(y)
             xdict = dict(enumerate(x))
             xax.setTicks([xdict.items()])
+
+    def setTicks(self,axis='x', values=[]):
+        if axis.lower() =='x':
+            xax = self.getAxis('bottom')
+        if axis.lower() == 'y':
+            xax = self.getAxis('left')
+
+        xax.setTicks([])  # removes tick labels
+
+        if len(values)>0:
+            x=[str(v) for v in values]
+            xdict = dict(enumerate(x))
+            xax.setTicks([xdict.items()])
+
 
     # replot data without creating a new curve. It changes xData and yData only.
     # yData format: list of numpy arrays [ yData_i ]

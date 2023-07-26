@@ -18,6 +18,7 @@ from ARI import ARIanalysis
 from PSDestimator import PSDestimator
 from signals import signal
 from TFA import transferFunctionAnalysis
+from Mx import meanFlowIdx
 
 __version__ = '0.2'
 
@@ -63,10 +64,12 @@ class patientData():
         self.hasTFdata_R = False
         self.hasARIdata_L = False
         self.hasARIdata_R = False
+        self.hasMXdata_L = False
+        self.hasMXdata_R = False
         self.historySignals = []
         self.historyOperations = []
 
-        if extension.lower() in ['.exp', '.dat', '.csv']:
+        if extension.lower() in ['.exp', '.dat', '.csv', '.par']:
             self.newJob(inputFile)
 
         if extension.lower() in ['.job']:
@@ -87,6 +90,8 @@ class patientData():
             self.DATAfileType = 'EXP_DAT'
         if extension.upper() in ['.CSV']:
             self.DATAfileType = 'CSV'
+        if extension.upper() in ['.PAR']:
+            self.DATAfileType = 'PAR'
 
         tools.ETaddElement(self.jobRootNode, 'inputFile', text=filePrefix + extension, attribList=[['type', self.DATAfileType]])
 
@@ -107,9 +112,12 @@ class patientData():
             self.DATAfileType = 'EXP_DAT'
         if extension.upper() in ['.CSV']:
             self.DATAfileType = 'CSV'
+        if extension.upper() in ['.PAR']:
+            self.DATAfileType = 'PAR'
 
         self.createNewOperation()
 
+        print('importing operations...')
         # import operationsFile
         for elem in self.jobRootNode.xpath('operationsFile'):
             pos = self.jobRootNode.index(elem)
@@ -119,9 +127,12 @@ class patientData():
         self.loadDATAfile()
 
         # run all operations
+        print('running preprocessing operations...')
         for elem in self.jobRootNode.xpath('operations/preprocessing'):
             self.runPreprocessingOperations(elem)
+
         if self.activeModule == 'ARanalysis':
+            print('running AR operations...')
             for elem in self.jobRootNode.xpath('operations/ARanalysis'):
                 self.runARanalysisOperations(elem)
 
@@ -281,6 +292,15 @@ class patientData():
 
                 self.nChannels = len(self.signalUnits)
 
+            if self.DATAfileType == 'PAR':
+                data = np.loadtxt(file, usecols=[0,1,2,3])
+
+                #sampling freq
+                self.samplingRate_Hz = 1.0/(data[1,0]-data[0,0])
+                self.signalLabels = ['CBFVL', 'APB', 'CBFVR']
+                self.signalUnits = ['cm/s','cmHg','cm/s']
+                self.sizeHeader = 0
+                self.nChannels = 3
 
     def loadDATAfile(self):
         """
@@ -342,12 +362,28 @@ class patientData():
             rawData = np.genfromtxt(self.DATAfileName, delimiter=';', skip_header=self.sizeHeader, autostrip=True, names=','.join(self.signalLabels),
                                     dtype=dtypes)
 
+        if self.DATAfileType == 'PAR':
+            # create dtype of the file
+            dtypes = ('f8',) * self.nChannels  # the other columns will be treated as float (8bits)
+
+            # col 0: time, col 1: CBFVL, col 2: APB, col 3: CBFVR
+            rawData = np.genfromtxt(self.DATAfileName, delimiter=None, skip_header=self.sizeHeader, autostrip=True, names=','.join(self.signalLabels),
+                                    dtype=dtypes,usecols=[1,2,3])
+
         self.signals = []
         for i in range(self.nChannels):
             label = self.signalLabels[i]
             newSignal = signal(channel=i, label=label, unit=self.signalUnits[i], data=rawData[label], samplingRate_Hz=self.samplingRate_Hz,
                                operationsXML=self.PPoperationsNode)
             self.signals.append(newSignal)
+
+        if self.DATAfileType == 'PAR':
+            self.hasB2Bdata = True
+            self.hasRRmarks = True
+            # when loading PAR file, all samples are aready peaks
+            self.peakIdx = np.array(range(self.signals[0].nPoints))
+            for ch in range(self.nChannels):
+                self.signals[ch].beat2beat(self.peakIdx, resampleRate_Hz=self.signals[ch].samplingRate_Hz, resampleMethod='linear')  # print(self.signals[ch].beat2beatData.max)
 
         del self.signalLabels
         del self.signalUnits
@@ -707,8 +743,8 @@ class patientData():
                     self.signals[channel].LPfilter(method, nTaps=Ntaps, order=None, register=False)
                 if method == 'butterworth':
                     order = tools.getElemValueXpath(operation, xpath='order', valType='int')
-                    print('Low Pass filter channel=%d: method=%s, Ntaps=%d' % (channel, method, Ntaps))
-                    self.signals[channel].LPfilter(method, nTaps=None, order=order, register=False)
+                    print('Low Pass filter channel=%d: method=%s, Ntaps=%d' % (channel, method))
+                    self.signals[channel].LPfilter(method, order=order, register=False)
 
             if operation.tag == 'interpolate':
                 frameStart = tools.getElemValueXpath(operation, xpath='frameStart', valType='int')
@@ -783,7 +819,7 @@ class patientData():
 
             """
         for operation in operationsElem:
-            if operation.tag not in ['PSDwelch', 'PSDsave', 'TFA', 'TFAsave', 'TFAsaveStat', 'ARI', 'ARIsave']:
+            if operation.tag not in ['PSDwelch', 'PSDsave', 'TFA', 'TFAsave', 'TFAsaveStat', 'ARI', 'ARIsave', 'MX', 'MXsave']:
                 print('Operation \'%s\' not recognized. Exiting...' % operation.tag)
                 exit()
 
@@ -846,6 +882,25 @@ class patientData():
 
                 self.saveARI(self.dirName + fileName, plotFileFormat, format, register=False)
 
+            if operation.tag == 'MX':
+                useB2B = tools.getElemValueXpath(operation, xpath='useB2B', valType='bool')
+                epochLength_s = tools.getElemValueXpath(operation, xpath='epochLength_s', valType='int')
+                blockLength_s = tools.getElemValueXpath(operation, xpath='blockLength_s', valType='int')
+
+                print('Computing Mx: useB2B=%s epochLength_s=%d blockLength_s=%d' % (
+                    str(useB2B), epochLength_s, blockLength_s ))
+                self.computeMX(useB2B, epochLength_s, blockLength_s, register=False)
+
+            if operation.tag == 'MXsave':
+                fileName = tools.getElemValueXpath(operation, xpath='fileName', valType='str')
+                plotFileFormat = tools.getElemValueXpath(operation, xpath='plotFileFormat', valType='str')
+                format = tools.getElemValueXpath(operation, xpath='format', valType='str')
+                print('MXsave: format=%s fileName=%s' % (format, fileName))
+
+                if plotFileFormat.lower() == 'none':
+                    plotFileFormat = None
+
+                self.saveMX(self.dirName + fileName, plotFileFormat, format, register=False)
 
     def findChannel(self, attribute, identifier):
         """
@@ -1561,7 +1616,7 @@ class patientData():
             xmlElement = ETree.Element('ARI')
             self.ARoperationsNode.append(xmlElement)
 
-    def saveARI(self, filePath, plotFileFormat = None,format='csv', register=True):
+    def saveARI(self, filePath, plotFileFormat = None, format='csv', register=True):
 
         if plotFileFormat is not None:
             if plotFileFormat.lower() not in ['png', 'jpg', 'tif', 'pdf', 'svg', 'eps', 'ps']:
@@ -1647,6 +1702,164 @@ class patientData():
 
         print('Ok!')
 
+    def computeMX(self, useB2B=True, epochLength_s=30, blockLength_s=10, register=True):
+
+        # find ABP and CBFV channels
+        ABP_channel = None
+        CBFv_R_channel = None
+        CBFv_L_channel = None
+        for s in self.signals:
+            if s.sigType == 'ABP':
+                ABP_channel = s.channel
+            if s.sigType == 'CBFV_R':
+                CBFv_R_channel = s.channel
+            if s.sigType == 'CBFV_L':
+                CBFv_L_channel = s.channel
+
+        # left side
+        if (ABP_channel is not None) and (CBFv_L_channel is not None):
+            if useB2B:
+                inputSignal = self.signals[ABP_channel].beat2beatData.avg
+                outputSignal = self.signals[CBFv_L_channel].beat2beatData.avg
+                Fs = self.signals[ABP_channel].beat2beatData.samplingRate_Hz
+            else:
+                inputSignal = self.signals[ABP_channel].data
+                outputSignal = self.signals[CBFv_L_channel].data
+                Fs = self.signals[ABP_channel].samplingRate_Hz
+
+            self.Mx_L = meanFlowIdx(inputSignal, outputSignal, Fs, epochLength_s, blockLength_s, self.signals[ABP_channel].unit,
+                                      self.signals[CBFv_L_channel].unit)
+            self.Mx_L.calcMx()
+            self.hasMXdata_L = True
+
+        else:
+            self.hasMXdata_L = False
+
+        # right channel
+        if (ABP_channel is not None) and (CBFv_R_channel is not None):
+            if useB2B:
+                inputSignal = self.signals[ABP_channel].beat2beatData.avg
+                outputSignal = self.signals[CBFv_R_channel].beat2beatData.avg
+                Fs = self.signals[ABP_channel].beat2beatData.samplingRate_Hz
+            else:
+                inputSignal = self.signals[ABP_channel].data
+                outputSignal = self.signals[CBFv_R_channel].data
+                Fs = self.signals[ABP_channel].samplingRate_Hz
+
+            self.Mx_R = meanFlowIdx(inputSignal, outputSignal, Fs, epochLength_s, blockLength_s,self.signals[ABP_channel].unit,
+                                      self.signals[CBFv_R_channel].unit)
+            self.Mx_R.calcMx()
+            self.hasMXdata_R = True
+
+        else:
+            self.hasMXdata_R = False
+
+        if register:
+            xmlElement = ETree.Element('MX')
+            tools.ETaddElement(parent=xmlElement, tag='useB2B', text=str(useB2B))
+            tools.ETaddElement(parent=xmlElement, tag='epochLength_s', text=str(epochLength_s))
+            tools.ETaddElement(parent=xmlElement, tag='blockLength_s', text=str(blockLength_s))
+            self.ARoperationsNode.append(xmlElement)
+
+    def saveMX(self, filePath, plotFileFormat = None, format='csv', register=True):
+        # format : string, optional
+        #    File format. Avaiable values: 'csv', 'numpy', 'simple_text'
+
+        if plotFileFormat is not None:
+            if plotFileFormat.lower() not in ['png', 'jpg', 'tif', 'pdf', 'svg', 'eps', 'ps']:
+                print('Mx Plot file format \'%s\' not recognized. Exiting...' % plotFileFormat)
+                sys.exit()
+
+        if (not self.hasMXdata_L) and (not self.hasMXdata_R):
+            print('No Mx data was found. Canceling save...')
+            return
+
+        print('Saving Mx data')
+
+        if format.lower() == 'simple_text':
+            outputFile = tools.setFileExtension(filePath, '.mx', case='lower')
+            if self.hasMXdata_L and self.hasMXdata_R:
+                self.Mx_L.save(outputFile, 'L', writeMode='w')
+                self.Mx_R.save(outputFile, 'R', writeMode='a')
+            else:
+                if self.hasMXdata_L:
+                    self.Mx_L.save(outputFile, 'L', writeMode='w')
+                if self.hasMXdata_R:
+                    self.Mx_R.save(outputFile, 'R', writeMode='w')
+
+        else:
+            signals = []
+            header = ''
+
+            if self.hasMXdata_L:
+                freq = self.Mx_L.Fs_Hz
+                nEpochs = self.Mx_L.nEpochs
+                epochLength_s = self.Mx_L.epochLength/freq
+                blockLength_s = self.Mx_L.blockLength/freq
+                MxSegments_L = self.Mx_L.Mx
+                segment=np.array(range(nEpochs))
+
+                signals += [segment,MxSegments_L]
+                header += 'segment;Mx_L;'
+            if self.hasMXdata_R:
+                freq = self.Mx_R.Fs_Hz
+                nEpochs = self.Mx_R.nEpochs
+                epochLength_s = self.Mx_R.epochLength/freq
+                blockLength_s = self.Mx_R.blockLength/freq
+                MxSegments_R = self.Mx_R.Mx
+                segment=np.array(range(nEpochs))
+
+                # add frequency vector only if there is no left PSD data
+                if not self.hasMXdata_L:
+                    signals += [segment,MxSegments_R]
+                    header += 'segment;Mx_R;'
+                else:
+                    signals += [MxSegments_R]
+                    header += 'Mx_R;'
+
+            if format.lower() == 'csv':
+                outputFile = tools.setFileExtension(filePath, '.csv', case='lower')
+                with open(outputFile, 'w') as fOut:
+                    fOut.write('NEPOCHS;%d\n' % nEpochs)
+                    fOut.write('FREQUENCY_Hz;%d\n' % freq)
+                    fOut.write('SEGMENT LENGTH (s);%d\n' % epochLength_s)
+                    fOut.write('BLOCK LENGTH (s);%d\n' % blockLength_s)
+                    fOut.write('-------DATA START-------;\n')
+                    fOut.write(header + '\n')
+                    signals = np.vstack(tuple(signals))
+                    np.savetxt(fOut, signals.T, delimiter=';', fmt='%1.6e')
+                    fOut.write('-------DATA END-------;\n')
+
+            if format.lower() == 'numpy':
+                outputFile = tools.setFileExtension(filePath, '.npy', case='lower')
+
+                # build a structured array
+                data = []
+                if self.hasMXdata_L:
+                    data.append(('L', segment, MxSegments_L))
+                if self.hasMXdata_R:
+                    data.append(('R', segment, MxSegments_R))
+
+                dt = np.dtype( [('side', 'U1'), ('segment', np.float64, (nPoints,)), ('MxSxx', np.float64, (nPoints,))] )
+
+                x = np.array(data, dtype=dt)
+                np.save(outputFile, x)
+
+        if plotFileFormat is not None:
+            if self.hasMXdata_L:
+                self.Mx_L.savePlot(fileNamePrefix=os.path.splitext(filePath)[0] + '_Left', fileType=plotFileFormat.lower(), figDpi=250)
+            if self.hasMXdata_R:
+                self.Mx_R.savePlot(fileNamePrefix=os.path.splitext(filePath)[0] + '_Right', fileType=plotFileFormat.lower(), figDpi=250)
+
+
+        if register:
+            xmlElement = ETree.Element('MXsave')
+            tools.ETaddElement(parent=xmlElement, tag='fileName', text=os.path.basename(filePath))
+            tools.ETaddElement(parent=xmlElement, tag='plotFileFormat', text=str(plotFileFormat))
+            tools.ETaddElement(parent=xmlElement, tag='format', text=format.lower())
+            self.ARoperationsNode.append(xmlElement)
+
+        print('Ok!')
 
 if __name__ == '__main__':
 
@@ -1657,16 +1870,22 @@ if __name__ == '__main__':
     print(patientData.getVersion())
 
     if False:
-        file = '../data/CG24HG.EXP'
+        file = '../../data/CG24HG.EXP'
     else:
-        file = '../data/CG24HG_AR.job'
+        file = '../../data/CG24HG_AR.job'
+
 
     x = patientData(file, activeModule='ARanalysis')
+
+    # MX analysis
+    x.computeMX(useB2B=True,epochLength_s=60,blockLength_s=10,register=True)
+    x.saveMX(filePath='./lixo.mx',plotFileFormat='png',format='simple_text',register=True)
 
     [medias_G_L, _, _, _] = x.TFA_L.getGainStatistics(freqRange='LF', coheTreshold=True)
     print(x.listChannels('label'))
     print(x.findChannel('label', 'Analog_2'))
 
+    x.saveJob(fileName='lixo.job')
     x.saveSIG('../data/lixo.sig')
 
     # for i in range(x.nChannels):
@@ -1696,7 +1915,6 @@ if __name__ == '__main__':
     #    print(x.signals[i].beat2beatData.min)
     #    print(x.signals[i].beat2beatData.avg)
 
-    # x.saveOperations()
     # x.saveBeat2beat('lixo.b2b',[0,2])
 
     x.saveBeat2beat('../data/lixo.b2b')

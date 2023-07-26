@@ -154,7 +154,7 @@ class PSDestimator():
         return signal
 
     def save(self, fileName, sideLabel='L', writeMode='w'):
-        fileObj = open(fileName, 'w')
+        fileObj = open(fileName, writeMode)
 
         np.set_printoptions(threshold=np.inf)
 

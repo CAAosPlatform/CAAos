@@ -355,6 +355,7 @@ class signal():
 
     # nTaps: must be odd number. Used for movingAverage and median
     # order: used for butterworth only
+    # nTaps not used in butterworth
     def LPfilter(self, method='movingAverage', nTaps=5, order=3, register=True):
 
         if nTaps % 2 == 0:

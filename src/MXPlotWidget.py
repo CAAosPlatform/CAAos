@@ -3,32 +3,18 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from PyQt5 import QtCore
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 import ARIPlotWidget
-import ARsetup
 import pyqtgraph as pg
 
 # copy pyQtConf from signalPlotWidget to here
 pyQtConf = ARIPlotWidget.pyQtConf
 
-
-class signalPlot(ARIPlotWidget.signalPlot):
-
-    def createFreqRegions(self, values=[[0.02, 0.07], [0.07, 0.20], [0.20, 0.50]], colors=['#d5e5ff', '#d7f4d7', '#ffe6d5']):
-        alpha = '80'
-        for i in range(len(values)):
-            selection = pg.LinearRegionItem(values=values[i], orientation=pg.LinearRegionItem.Vertical, movable=False,
-                                            brush=pg.mkBrush(color=colors[i] + alpha))
-            selection.setZValue(-10)
-            self.addItem(selection, ignoreBounds=True)
-
-
-
-
 class plotArray(ARIPlotWidget.plotArray):
+
     # class to be instanced in addNewPlot funcion member
-    newPlotClass = signalPlot
+    newPlotClass = ARIPlotWidget.signalPlot
 
     # adds new plot. All the plots must have the same number of points
     # yData format: list of lists of the type [data_i,color_i,label_i]
@@ -36,19 +22,22 @@ class plotArray(ARIPlotWidget.plotArray):
     def addNewPlot(self, yData=None, yUnit='adim', title=None, logY=False, legend=False):
 
         if self.side.upper() == 'R':
-            self.xData = self.data.PSD_R.freq
+            self.xData = np.arange(self.data.Mx_R.nEpochs)
         else:
-            self.xData = self.data.PSD_L.freq
+            self.xData = np.arange(self.data.Mx_L.nEpochs)
 
         self.Npoints = len(self.xData)
 
         yData = [[np.zeros(self.Npoints), c, l] if y is None else [y, c, l] for y, c, l in yData]
 
-        newPlot = self.newPlotClass(self.xData, 'Frequency', 'Hz', yData, yUnit=yUnit, title=title, logY=logY, legend=legend)
+        newPlot = self.newPlotClass(self.xData, 'Epoch', '', yData, yUnit=yUnit, title=title, logY=logY, legend=legend)
 
-        # newPlot.addLegend(yLabel)
-        newPlot.createFreqRegions(values=[ARsetup.freqRangeDic['VLF'], ARsetup.freqRangeDic['LF'], ARsetup.freqRangeDic['HF']],
-                                  colors=[ARsetup.freqRangeColors['VLF'], ARsetup.freqRangeColors['LF'], ARsetup.freqRangeColors['HF']])
+        newPlot.signalCurve[0].setSymbol('o')
+        newPlot.signalCurve[0].setSymbolPen(QtGui.QColor(0, 0, 0))
+        newPlot.signalCurve[0].setPen(pg.mkPen(style=QtCore.Qt.DashLine))
+
+        newPlot.setTicks(axis='x', values=self.xData+1)
+
 
         if self.Nplots > 0:
 
@@ -67,9 +56,12 @@ class plotArray(ARIPlotWidget.plotArray):
         self.Nplots = len(self.axes)
         self.PlotNbr[self.Nplots - 1] = self.Nplots - 1
 
+
+        # set limits
+        self.setLimits(xlim=[-1, len(self.xData)], ylim=[None])
+
         if self.Nplots % self.numberOfColumns == 0:
             self.nextRow()
 
-    def markAvgRanges(self, plotNbr=0, avgValues=[1.0, 1.0, 1.0]):
-        for fRange, avgVal in zip(['VLF', 'LF', 'HF'], avgValues):
-            self.axes[plotNbr].hLine(avgVal, ARsetup.freqRangeDic[fRange])
+    def markAvg(self, plotNbr=0, avgValue=1.0,legend=None):
+        self.axes[plotNbr].hLine(avgValue, [self.xData[0], self.xData[-1]],legend)

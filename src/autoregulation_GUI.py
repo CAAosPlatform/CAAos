@@ -10,6 +10,7 @@ from ARIWidget import ARIWidget
 from patientData import patientData
 from powerSpectrumWidget import powerSpectrumWidget
 from TFAWidget import TFAWidget
+from MxWidget import MxWidget
 
 
 class autoregulation_GUI(QtWidgets.QWidget):
@@ -68,7 +69,7 @@ class autoregulation_GUI(QtWidgets.QWidget):
             self.fileName, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Select input data file', '', 'Autoregulation jobs (*.job) (*.job)')
         else:
             print('LOAD de arquivo abreviado! ver autoregulation_GUI.py, linha 64')
-            self.fileName = '/home/fernando/servidor/programas/00_UFABC/ProjetoPosDocAngela/data/CG21HG_AR.job'
+            self.fileName = '/home/fernando/servidor/programas/00_UFABC/ProjetoPosDocAngela/data/CG24HG_AR_MX.job'
 
         if not self.fileName:
             return
@@ -163,6 +164,11 @@ class autoregulation_GUI(QtWidgets.QWidget):
         self.ARI = ARIWidget(self.data)
         self.tabWidget.addTab(self.ARI, 'Autoregulation index analysis (ARI)')
 
+        # Mx
+        self.MX = MxWidget(self.data)
+        self.tabWidget.addTab(self.MX, 'Mean Flow Index (Mx)')
+
+
         self.tabWidget.currentChanged.connect(self.updateTabs)
         self.vbox.addWidget(self.tabWidget)
 
@@ -177,6 +183,8 @@ class autoregulation_GUI(QtWidgets.QWidget):
             self.TFA.updateTab()
         if self.sender().currentIndex() == 2:
             self.ARI.updateTab()
+        if self.sender().currentIndex() == 3:
+            self.MX.updateTab()
 
     def saveJob(self, fileName=None):
 

@@ -187,3 +187,78 @@ class ARIresultTable(QtWidgets.QWidget):
 
     def setBestFit(self, bestARI):
         self.bestFitLabel.setText('{0:.2f}'.format(bestARI)    )
+
+
+class MXresultTable(QtWidgets.QWidget):
+    def __init__(self):
+        QtWidgets.QWidget.__init__(self)
+        self.nChannels = 0
+        self.nRows = 1  # does not include the label row
+        self.nCols = 10  # does not include the label column
+        self.colSizes = 100
+        self.colLabels = [str(x+1) for x in range(self.nCols)]
+        self.rowLabels = ['Mx:']
+        self.colLabelsOffset = 5
+        self.initUI()
+        #self.setFixedWidth(700)
+        self.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
+
+    def initUI(self):
+        vboxL = QtWidgets.QVBoxLayout()
+        self.grid = QtWidgets.QGridLayout()
+        self.grid.setHorizontalSpacing(0)
+        self.grid.setVerticalSpacing(0)
+        self.grid.setRowMinimumHeight(0, 10)
+        self.grid.setColumnMinimumWidth(0, 20)
+
+        #self.bestFitLabel = QtWidgets.QLabel('Best fit: ', self)
+
+        vboxL.addLayout(self.grid)
+        #vboxL.addWidget(self.bestFitLabel)
+
+        self.setLayout(vboxL)
+        self.initTable()
+        self.setMx([0.0,]*10)
+        self.setAvgMx(0)
+
+    def initTable(self):
+
+        # columns
+        for i in range(self.nCols):
+            text = QtWidgets.QLabel(self.colLabels[i], self)
+            text.setAlignment(QtCore.Qt.AlignRight)
+            self.grid.addWidget(text, 0, i + 1)
+            text.setFixedWidth(50)
+
+        # rows
+        text = QtWidgets.QLabel('Epoch', self)
+        text.setAlignment(QtCore.Qt.AlignRight)
+        self.grid.addWidget(text, 0,0)
+        text.setFixedWidth(50)
+
+        for i in range(self.nRows):
+            text = QtWidgets.QLabel(self.rowLabels[i], self)
+            text.setAlignment(QtCore.Qt.AlignRight)
+            self.grid.addWidget(text, i + 1, 0)
+
+        # cels
+        for i in range(self.nRows):
+            for j in range(self.nCols):
+                text = QtWidgets.QLabel('', self)
+                text.setAlignment(QtCore.Qt.AlignRight)
+                self.grid.addWidget(text, i + 1, j + 1)
+        #best Fit
+        self.grid.addWidget(QtWidgets.QLabel('average Mx:', self), self.nRows+ 1, 0)
+        self.averageMX = QtWidgets.QLabel('', self)
+        self.averageMX.setAlignment(QtCore.Qt.AlignRight)
+        self.grid.addWidget(self.averageMX, self.nRows + 1, 1)
+
+    def setMx(self, values):
+        row=0
+        for i, v in enumerate(values):
+            valueStr = str('{0:.2f}'.format(v))
+            text = self.grid.itemAtPosition(row + 1, i + 1).widget()
+            text.setText(valueStr)
+
+    def setAvgMx(self, avgMx):
+        self.averageMX.setText('{0:.2f}'.format(avgMx) )

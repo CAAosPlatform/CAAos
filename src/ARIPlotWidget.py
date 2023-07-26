@@ -155,7 +155,7 @@ class plotArray(pg.GraphicsLayoutWidget):
 
     # adjusts the limits of the crop region
     # channels:  'all' add to all avaiable channels,   list: list of channels
-    def adjusPosSelection(self, minX, maxX, channels='all'):
+    def adjustPosSelection(self, minX, maxX, channels='all'):
         if channels == 'all':
             channels = range(self.Nplots)
 
@@ -182,7 +182,7 @@ class plotArray(pg.GraphicsLayoutWidget):
             minX = self.sender().selection.value()
             maxX = None
 
-        self.adjusPosSelection(minX, maxX)
+        self.adjustPosSelection(minX, maxX)
 
     # returns the position of the highlighted rgion
     # this function returns the limits in x units and also in samples
