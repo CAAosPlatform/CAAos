@@ -29,18 +29,20 @@ class ARIWidget(QtWidgets.QWidget):
 
         # Response time
         # custom value option
-        default = 10.0
-        self.responseTime = default
-        responseTimeWidget = QtWidgets.QDoubleSpinBox()
-        responseTimeWidget.setRange(5, 30)
-        responseTimeWidget.setFixedWidth(100)
-        responseTimeWidget.setDecimals(1)
-        responseTimeWidget.setSingleStep(0.5)
-        responseTimeWidget.setValue(default)
-        responseTimeWidget.setEnabled(True)
-        responseTimeWidget.valueChanged.connect(lambda: self.registerOptions('responseTime'))
+        if False:
+            # I removed this option because it is not currently implemented
+            default = 10.0
+            self.responseTime = default
+            responseTimeWidget = QtWidgets.QDoubleSpinBox()
+            responseTimeWidget.setRange(5, 30)
+            responseTimeWidget.setFixedWidth(100)
+            responseTimeWidget.setDecimals(1)
+            responseTimeWidget.setSingleStep(0.5)
+            responseTimeWidget.setValue(default)
+            responseTimeWidget.setEnabled(True)
+            responseTimeWidget.valueChanged.connect(lambda: self.registerOptions('responseTime'))
 
-        formLayout.addRow('responseTime (s)', responseTimeWidget)
+            formLayout.addRow('responseTime (s)', responseTimeWidget)
 
         # plot file format
         default = 0  # png
@@ -180,7 +182,7 @@ class ARIWidget(QtWidgets.QWidget):
         fileExtension = '.ari'
 
         if self.data.hasARIdata_L or self.data.hasARIdata_R:
-            resultFileName, selectedFilter = QtWidgets.QFileDialog.getSaveFileName(self, 'Save autoregulation index data as',
+            resultFileName, selectedFilter = QtWidgets.QFileDialog.getSaveFileName(self, 'Save ARI data as',
                                                                                    self.data.dirName + self.data.filePrefix + '_ARI' + fileExtension,
                                                                                    'Autoregulation index (.ari) (*.ari);;'
                                                                                    'CSV (.csv) (*.csv);;'

@@ -5,14 +5,14 @@
 import numpy as np
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-from MxPlotWidget import plotArray, pyQtConf
-from customWidgets import MXresultTable
+from ARIARMAPlotWidget import plotArray, pyQtConf
+from customWidgets import ARIresultTable
 
 plotFileFormatDict = {0: ('png', 'PNG'), 1: ('jpg', 'JPG'), 2: ('tif', 'TIF'), 3: ('pdf', 'PDF'), 4: ('svg', 'SVG'), 5: ('eps', 'EPS'),
-                      6: ('ps', 'PS'), 7: ('none', 'None')}
+                      6: ('ps', 'PS'), 7:('none','None')}
 
 
-class MxWidget(QtWidgets.QWidget):
+class ARIARMAWidget(QtWidgets.QWidget):
 
     def __init__(self, patientData):
         QtWidgets.QWidget.__init__(self)
@@ -37,35 +37,35 @@ class MxWidget(QtWidgets.QWidget):
 
         formLayout.addRow('Use beat-to-beat data', useB2B)
 
-        # epoch length in seconds
+        # order P
         # custom value option
-        default = 60
-        self.epochLength = default
-        epochLengthWidget = QtWidgets.QDoubleSpinBox()
-        epochLengthWidget.setRange(10, 60)
-        epochLengthWidget.setFixedWidth(100)
-        epochLengthWidget.setDecimals(0)
-        epochLengthWidget.setSingleStep(5)
-        epochLengthWidget.setValue(default)
-        epochLengthWidget.setEnabled(True)
-        epochLengthWidget.valueChanged.connect(lambda: self.registerOptions('epochLength'))
+        default = 2
+        self.orderP = default
+        orderP_Widget = QtWidgets.QDoubleSpinBox()
+        orderP_Widget.setRange(1, 5)
+        orderP_Widget.setFixedWidth(100)
+        orderP_Widget.setDecimals(0)
+        orderP_Widget.setSingleStep(1)
+        orderP_Widget.setValue(default)
+        orderP_Widget.setEnabled(True)
+        orderP_Widget.valueChanged.connect(lambda: self.registerOptions('orderP'))
 
-        formLayout.addRow('epoch length (s)', epochLengthWidget)
+        formLayout.addRow('order P', orderP_Widget)
 
-        # block length in seconds
+        # order Q
         # custom value option
-        default = 10
-        self.blockLength = default
-        blockLengthWidget = QtWidgets.QDoubleSpinBox()
-        blockLengthWidget.setRange(1, 10)
-        blockLengthWidget.setFixedWidth(100)
-        blockLengthWidget.setDecimals(0)
-        blockLengthWidget.setSingleStep(1)
-        blockLengthWidget.setValue(default)
-        blockLengthWidget.setEnabled(True)
-        blockLengthWidget.valueChanged.connect(lambda: self.registerOptions('blockLength'))
+        default = 2
+        self.orderQ = default
+        orderQ_Widget = QtWidgets.QDoubleSpinBox()
+        orderQ_Widget.setRange(1, 5)
+        orderQ_Widget.setFixedWidth(100)
+        orderQ_Widget.setDecimals(0)
+        orderQ_Widget.setSingleStep(1)
+        orderQ_Widget.setValue(default)
+        orderQ_Widget.setEnabled(True)
+        orderQ_Widget.valueChanged.connect(lambda: self.registerOptions('orderQ'))
 
-        formLayout.addRow('block length (s)', blockLengthWidget)
+        formLayout.addRow('order Q', orderQ_Widget)
 
         # plot file format
         default = 0  # png
@@ -77,27 +77,27 @@ class MxWidget(QtWidgets.QWidget):
 
         formLayout.addRow('Plot file format', plotFileFormatControl)
 
-        # MX button
-        self.applyMXButton = QtWidgets.QPushButton('Compute nMx')
-        self.applyMXButton.setFixedWidth(100)
-        self.applyMXButton.setEnabled(False)
-        self.applyMXButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
-        self.applyMXButton.setStyleSheet('background-color:rgb(192,255,208)')  # light green
-        self.applyMXButton.clicked.connect(self.applyMX)
-        hbox.addWidget(self.applyMXButton)
+        # ARI button
+        self.applyARIButton = QtWidgets.QPushButton('Compute\nARI ARMA')
+        self.applyARIButton.setFixedWidth(100)
+        #self.applyARIButton.setEnabled(False)
+        self.applyARIButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
+        self.applyARIButton.setStyleSheet('background-color:rgb(192,255,208)')  # light green
+        self.applyARIButton.clicked.connect(self.applyARIARMA)
+        hbox.addWidget(self.applyARIButton)
 
         # Save button
-        self.saveButton = QtWidgets.QPushButton('Save nMx data')
-        self.saveButton.setFixedWidth(100)
+        self.saveButton = QtWidgets.QPushButton('Save\nARI ARMA\ndata')
+        self.saveButton.setFixedWidth(130)
         self.saveButton.setEnabled(False)
         self.saveButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
         self.saveButton.setStyleSheet('background-color:rgb(192,255,208)')  # light green
-        self.saveButton.clicked.connect(self.saveMX)
+        self.saveButton.clicked.connect(self.saveARIARMA)
         hbox.addWidget(self.saveButton)
 
         # Create table
-        self.resultTableLWidget = MXresultTable()
-        self.resultTableRWidget = MXresultTable()
+        self.resultTableLWidget = ARIresultTable()
+        self.resultTableRWidget = ARIresultTable()
         hbox.addStretch(1)
 
         # plot area
@@ -109,7 +109,7 @@ class MxWidget(QtWidgets.QWidget):
         vboxL.addWidget(text)
         vboxL.addWidget(self.resultTableLWidget)
         vboxL.addWidget(self.plotAreaL)
-        #
+
         self.plotAreaR = plotArray(self.data, side='R', nCols=1)
         vboxR = QtWidgets.QVBoxLayout()
         text = QtWidgets.QLabel('Right')
@@ -132,59 +132,48 @@ class MxWidget(QtWidgets.QWidget):
 
     def updateTab(self):
 
-        if self.data.hasMXdata_L or self.data.hasMXdata_R:
+        if self.data.hasARIARMAdata_L or self.data.hasARIARMAdata_R:
             self.saveButton.setEnabled(True)
         else:
             self.saveButton.setEnabled(False)
 
+
         # left side
-        if self.data.hasMXdata_L:
+        if self.data.hasARIARMAdata_L:
             self.plotData(side='L')
             self.fillTableResults(side='L')
 
         # right side
-        if self.data.hasMXdata_R:
+        if self.data.hasARIARMAdata_R:
             self.plotData(side='R')
             self.fillTableResults(side='R')
 
-        self.applyMXButton.setEnabled(True)
-        self.applyMXButton.setText('Compute nMX')
-        self.applyMXButton.setStyleSheet('color:rgb(0,0,0);background-color:rgb(192,255,208)')  # light green
-
     def registerOptions(self, typeOpt):
-        if typeOpt == 'epochLength':
-            self.epochLength = self.sender().value()
-        if typeOpt == 'blockLength':
-            self.blockLength = self.sender().value()
+        if typeOpt == 'useB2B':
+            self.useB2B = self.sender().isChecked()
+        if typeOpt == 'orderP':
+            self.orderP = self.sender().value()
+        if typeOpt == 'orderQ':
+            self.orderQ = self.sender().value()
+
         if typeOpt == 'plotFileFormat':
             self.plotFileFormat = plotFileFormatDict[self.sender().currentIndex()][0]
             if self.plotFileFormat.lower() == 'none':
                 self.plotFileFormat = None
-        if typeOpt == 'useB2B':
-            self.useB2B = self.sender().isChecked()
-
-        if self.epochLength < self.blockLength:
-            self.applyMXButton.setEnabled(False)
-            self.applyMXButton.setText('Compute nMX\n\n epoch must be larger than block')
-            self.applyMXButton.setStyleSheet('color:rgb(255,0,0)')
-        else:
-            self.applyMXButton.setEnabled(True)
-            self.applyMXButton.setText('Compute nMX')
-            self.applyMXButton.setStyleSheet('color:rgb(0,0,0);background-color:rgb(192,255,208)')  # light green
 
     # synchronize signals
-    def applyMX(self):
-        self.data.computeMX(useB2B=self.useB2B, epochLength_s=self.epochLength, blockLength_s=self.blockLength, register=True)
-        self.applyMXButton.clearFocus()
+    def applyARIARMA(self):
+        self.data.computeARIARMA(useB2B=self.useB2B, orderP=self.orderP, orderQ=self.orderQ)
+        self.applyARIButton.clearFocus()
         self.saveButton.setEnabled(True)
 
         # left side
-        if self.data.hasMXdata_L:
+        if self.data.hasARIARMAdata_L:
             self.plotData(side='L')
             self.fillTableResults(side='L')
 
         # right side
-        if self.data.hasMXdata_R:
+        if self.data.hasARIARMAdata_R:
             self.plotData(side='R')
             self.fillTableResults(side='R')
 
@@ -194,22 +183,23 @@ class MxWidget(QtWidgets.QWidget):
         # select data
         if side.upper() == 'L':
             resultTable = self.resultTableLWidget
-            MXdata = self.data.Mx_L
+            ARIdata = self.data.ARIARMA_L
         if side.upper() == 'R':
             resultTable = self.resultTableRWidget
-            MXdata = self.data.Mx_R
+            ARIdata = self.data.ARIARMA_R
 
-        resultTable.setMx(MXdata.Mx)
-        resultTable.setAvgMx(MXdata.MxAvg)
+        resultTable.setError(ARIdata.TiecksErrors)
+        resultTable.setBestFit(ARIdata.ARI_frac)
 
-    def saveMX(self):
+
+    def saveARIARMA(self):
         self.parent().patientData = self.data
-        fileExtension = '.mx'
+        fileExtension = '.ariarma'
 
-        if self.data.hasMXdata_L or self.data.hasMXdata_R:
-            resultFileName, selectedFilter = QtWidgets.QFileDialog.getSaveFileName(self, 'Save autoregulation index data as',
-                                                                                   self.data.dirName + self.data.filePrefix + '_MX' + fileExtension,
-                                                                                   'Autoregulation index (.mx) (*.mx);;'
+        if self.data.hasARIARMAdata_L or self.data.hasARIARMAdata_R:
+            resultFileName, selectedFilter = QtWidgets.QFileDialog.getSaveFileName(self, 'Save ARI ARMA data as',
+                                                                                   self.data.dirName + self.data.filePrefix + '_ARI' + fileExtension,
+                                                                                   'Autoregulation index (.ariarma) (*.ariarma);;'
                                                                                    'CSV (.csv) (*.csv);;'
                                                                                    'Numpy (.npy) (*npy);;')
             if resultFileName:
@@ -217,10 +207,10 @@ class MxWidget(QtWidgets.QWidget):
                     fileFormat = 'csv'
                 if '.npy' in selectedFilter:
                     fileFormat = 'numpy'
-                if '.mx' in selectedFilter:
+                if '.ari' in selectedFilter:
                     fileFormat = 'simple_text'
 
-                self.data.saveMX(filePath=resultFileName, plotFileFormat=self.plotFileFormat, format=fileFormat, register=True)
+                self.data.saveARIARMA(filePath = resultFileName, plotFileFormat = self.plotFileFormat, format=fileFormat, register=True)
 
     # side:  'L'  or 'R'
     def plotData(self, side='L'):
@@ -228,13 +218,20 @@ class MxWidget(QtWidgets.QWidget):
         # select data
         if side.upper() == 'L':
             plotArea = self.plotAreaL
-            MX_data = self.data.Mx_L
+            ARIARMA_data = self.data.ARIARMA_L
         if side.upper() == 'R':
             plotArea = self.plotAreaR
-            MX_data = self.data.Mx_R
+            ARIARMA_data = self.data.ARIARMA_R
 
         # create plots
         plotArea.clearAll()
-        plotArea.addNewPlot(yData=[[MX_data.Mx, (0,0,0), 'Epochs']], yUnit='Mx', title='', logY=False, legend=False)
-        plotArea.markAvg(plotNbr=0, avgValue=MX_data.MxAvg,legend=None)
+        plotArea.addNewPlot(yData=[[ARIARMA_data.stepResponse, pyQtConf['plotColors']['red'], 'Patient'],
+                                   [ARIARMA_data.ARIbestFit, pyQtConf['plotColors']['blue'], 'ARI(best fit)']],
+                            yUnit='Velocity [ %s ]' % ARIARMA_data.unitV, title='', logY=False, legend=True)
 
+        # set limits
+        maxImp = np.amax(ARIARMA_data.stepResponse)
+        minImp = np.amin(ARIARMA_data.stepResponse)
+        maxTiek = np.amax(ARIARMA_data.ARIbestFit)
+        minTiek = np.amin(ARIARMA_data.ARIbestFit)
+        plotArea.setLimits(xlim=[0, ARIARMA_data.timeVals[-1]], ylim=[[min(minImp, minTiek), max(maxImp, maxTiek)]])

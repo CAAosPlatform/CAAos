@@ -15,6 +15,7 @@ from scipy import signal as scipySignal
 
 import tools
 from ARI import ARIanalysis
+from ARIARMA import ARIARMAanalysis
 from PSDestimator import PSDestimator
 from signals import signal
 from TFA import transferFunctionAnalysis
@@ -64,6 +65,8 @@ class patientData():
         self.hasTFdata_R = False
         self.hasARIdata_L = False
         self.hasARIdata_R = False
+        self.hasARIARMAdata_L = False
+        self.hasARIARMAdata_R = False
         self.hasMXdata_L = False
         self.hasMXdata_R = False
         self.historySignals = []
@@ -819,7 +822,8 @@ class patientData():
 
             """
         for operation in operationsElem:
-            if operation.tag not in ['PSDwelch', 'PSDsave', 'TFA', 'TFAsave', 'TFAsaveStat', 'ARI', 'ARIsave', 'MX', 'MXsave']:
+            if operation.tag not in ['PSDwelch', 'PSDsave', 'TFA', 'TFAsave', 'TFAsaveStat', 'ARI', 'ARIsave', 'MX', 'MXsave', 'ARIARMA',
+                                     'ARIARMAsave']:
                 print('Operation \'%s\' not recognized. Exiting...' % operation.tag)
                 exit()
 
@@ -881,6 +885,24 @@ class patientData():
                     plotFileFormat = None
 
                 self.saveARI(self.dirName + fileName, plotFileFormat, format, register=False)
+
+            if operation.tag == 'ARIARMA':
+                useB2B = tools.getElemValueXpath(operation, xpath='useB2B', valType='bool')
+                p = tools.getElemValueXpath(operation, xpath='p', valType='int')
+                q = tools.getElemValueXpath(operation, xpath='q', valType='int')
+                print('ARIARMA:')
+                self.computeARIARMA(useB2B,p,q,register=False)
+
+            if operation.tag == 'ARIARMAsave':
+                fileName = tools.getElemValueXpath(operation, xpath='fileName', valType='str')
+                plotFileFormat = tools.getElemValueXpath(operation, xpath='plotFileFormat', valType='str')
+                format = tools.getElemValueXpath(operation, xpath='format', valType='str')
+                print('ARIARMAsave: format=%s fileName=%s' % (format, fileName))
+
+                if plotFileFormat.lower() == 'none':
+                    plotFileFormat = None
+
+                self.saveARIARMA(self.dirName + fileName, plotFileFormat, format, register=False)
 
             if operation.tag == 'MX':
                 useB2B = tools.getElemValueXpath(operation, xpath='useB2B', valType='bool')
@@ -1620,7 +1642,7 @@ class patientData():
 
         if plotFileFormat is not None:
             if plotFileFormat.lower() not in ['png', 'jpg', 'tif', 'pdf', 'svg', 'eps', 'ps']:
-                print('TFA Plot file format \'%s\' not recognized. Exiting...' % plotFileFormat)
+                print('ARI Plot file format \'%s\' not recognized. Exiting...' % plotFileFormat)
                 sys.exit()
 
         if (not self.hasARIdata_L) and (not self.hasARIdata_R):
@@ -1692,6 +1714,151 @@ class patientData():
                 self.ARI_L.savePlot(fileNamePrefix=os.path.splitext(filePath)[0] + '_Left', fileType=plotFileFormat.lower(), figDpi=250)
             if self.hasARIdata_R:
                 self.ARI_R.savePlot(fileNamePrefix=os.path.splitext(filePath)[0] + '_Right', fileType=plotFileFormat.lower(), figDpi=250)
+
+        if register:
+            xmlElement = ETree.Element('ARIsave')
+            tools.ETaddElement(parent=xmlElement, tag='fileName', text=os.path.basename(filePath))
+            tools.ETaddElement(parent=xmlElement, tag='plotFileFormat', text=str(plotFileFormat))
+            tools.ETaddElement(parent=xmlElement, tag='format', text=format.lower())
+            self.ARoperationsNode.append(xmlElement)
+
+        print('Ok!')
+
+    def computeARIARMA(self, useB2B=True, orderP=2,orderQ=2,register=True):
+
+        # find ABP and CBFV channels
+        ABP_channel = None
+        CBFv_R_channel = None
+        CBFv_L_channel = None
+        for s in self.signals:
+            if s.sigType == 'ABP':
+                ABP_channel = s.channel
+            if s.sigType == 'CBFV_R':
+                CBFv_R_channel = s.channel
+            if s.sigType == 'CBFV_L':
+                CBFv_L_channel = s.channel
+
+        # left side
+        if (ABP_channel is not None) and (CBFv_L_channel is not None):
+            if useB2B:
+                inputSignal = self.signals[ABP_channel].beat2beatData.avg
+                outputSignal = self.signals[CBFv_L_channel].beat2beatData.avg
+                Fs = self.signals[ABP_channel].beat2beatData.samplingRate_Hz
+            else:
+                inputSignal = self.signals[ABP_channel].data
+                outputSignal = self.signals[CBFv_L_channel].data
+                Fs = self.signals[ABP_channel].samplingRate_Hz
+
+            self.ARIARMA_L = ARIARMAanalysis(inputSignal, outputSignal, Fs,  orderP, orderQ,self.signals[ABP_channel].unit,
+                                      self.signals[CBFv_L_channel].unit)
+
+            self.hasARIARMAdata_L = True
+
+        else:
+            self.hasARIARMAdata_L = False
+
+        # right channel
+        if (ABP_channel is not None) and (CBFv_R_channel is not None):
+            if useB2B:
+                inputSignal = self.signals[ABP_channel].beat2beatData.avg
+                outputSignal = self.signals[CBFv_R_channel].beat2beatData.avg
+                Fs = self.signals[ABP_channel].beat2beatData.samplingRate_Hz
+            else:
+                inputSignal = self.signals[ABP_channel].data
+                outputSignal = self.signals[CBFv_R_channel].data
+                Fs = self.signals[ABP_channel].samplingRate_Hz
+
+            self.ARIARMA_R = ARIARMAanalysis(inputSignal, outputSignal, Fs,  orderP, orderQ,self.signals[ABP_channel].unit,
+                                      self.signals[CBFv_R_channel].unit)
+
+            self.hasARIARMAdata_R = True
+
+        else:
+            self.hasARIARMAdata_R = False
+
+        if register:
+            xmlElement = ETree.Element('ARIARMA')
+            tools.ETaddElement(parent=xmlElement, tag='useB2B', text=str(useB2B))
+            tools.ETaddElement(parent=xmlElement, tag='p', text=str(orderP))
+            tools.ETaddElement(parent=xmlElement, tag='q', text=str(orderQ))
+            self.ARoperationsNode.append(xmlElement)
+
+    def saveARIARMA(self, filePath, plotFileFormat = None, format='csv', register=True):
+
+        if plotFileFormat is not None:
+            if plotFileFormat.lower() not in ['png', 'jpg', 'tif', 'pdf', 'svg', 'eps', 'ps']:
+                print('ARIARMA Plot file format \'%s\' not recognized. Exiting...' % plotFileFormat)
+                sys.exit()
+
+        if (not self.hasARIARMAdata_L) and (not self.hasARIARMAdata_R):
+            print('No ARIARMA data was found. Canceling save...')
+            return
+
+        if format.lower() == 'simple_text':
+            outputFile = tools.setFileExtension(filePath, '.ariarma', case='lower')
+            if self.hasARIARMAdata_L and self.hasARIARMAdata_R:
+                self.ARIARMA_L.save(outputFile, 'L', writeMode='w')
+                self.ARIARMA_R.save(outputFile, 'R', writeMode='a')
+            else:
+                if self.hasARIARMAdata_L:
+                    self.ARIARMA_L.save(outputFile, 'L', writeMode='w')
+                if self.hasARIARMAdata_R:
+                    self.ARIARMA_R.save(outputFile, 'R', writeMode='w')
+
+        else:
+            signals = []
+            header = ''
+            if self.hasARIARMAdata_L:
+                nPoints = self.ARIARMA_L.nDuration
+                signals += [self.ARIARMA_L.timeVals, self.ARIARMA_L.stepResponse, self.ARIARMA_L.ARIbestFit]
+                header += 'time (s);impulse_response_L;best_fit_curve_L;'
+            if self.hasARIARMAdata_R:
+                nPoints = self.ARIARMA_R.nDuration
+                # add frequency vector only if there is no left PSD data
+                if not self.hasARIARMAdata_L:
+                    signals += [self.ARIARMA_R.timeVals, self.ARIARMA_R.stepResponse, self.ARIARMA_R.ARIbestFit]
+                    header += 'time (s);impulse_response_R;best_fit_curve_R;'
+                else:
+                    signals += [self.ARIARMA_R.stepResponse, self.ARIARMA_R.ARIbestFit]
+                    header += 'impulse_response_R;best_fit_curve_R;'
+
+            if format.lower() == 'csv':
+                outputFile = tools.setFileExtension(filePath, '.csv', case='lower')
+                with open(outputFile, 'w') as fOut:
+                    if self.hasARIARMAdata_L:
+                        fOut.write('ARI_INT_BEST_FIT_L;%d\n' % self.ARIARMA_L.ARI_int)
+                        fOut.write('ARI_FRAC_BEST_FIT_L;%f\n' % self.ARIARMA_L.ARI_frac)
+                    if self.hasARIARMAdata_R:
+                        fOut.write('ARI_INT_BEST_FIT_R;%d\n' % self.ARIARMA_R.ARI_int)
+                        fOut.write('ARI_FRAC_BEST_FIT_R;%f\n' % self.ARIARMA_R.ARI_frac)
+                    fOut.write('N_POINTS;%d\n' % nPoints)
+                    fOut.write('-------DATA START-------;\n')
+                    fOut.write(header + '\n')
+                    signals = np.vstack(tuple(signals))
+                    np.savetxt(fOut, signals.T, delimiter=';', fmt='%1.15e')
+                    fOut.write('-------DATA END-------;\n')
+
+            if format.lower() == 'numpy':
+                outputFile = tools.setFileExtension(filePath, '.npy', case='lower')
+
+                # build a structured array
+                data = []
+                if self.hasARIARMAdata_L:
+                    data.append(('L', self.ARIARMA_L.ARI_int, self.ARIARMA_L.ARI_frac, self.ARIARMA_L.timeVals, self.ARIARMA_L.stepResponse, self.ARIARMA_L.ARIbestFit))
+                if self.hasARIARMAdata_R:
+                    data.append(('R', self.ARIARMA_R.ARI_int, self.ARIARMA_L.ARI_frac, self.ARIARMA_R.timeVals, self.ARIARMA_R.stepResponse, self.ARIARMA_R.ARIbestFit))
+
+                dt = np.dtype([('side', 'U1'), ('ARI_int', np.int8), ('ARI_frac', np.float64), ('time_(s)', np.float64, (nPoints,)),
+                               ('impulse_response', np.float64, (nPoints,)), ('ari_best_fit', np.float64, (nPoints,))])
+
+                x = np.array(data, dtype=dt)
+                np.save(outputFile, x)
+
+        if plotFileFormat is not None:
+            if self.hasARIARMAdata_L:
+                self.ARIARMA_L.savePlot(fileNamePrefix=os.path.splitext(filePath)[0] + '_Left', fileType=plotFileFormat.lower(), figDpi=250)
+            if self.hasARIARMAdata_R:
+                self.ARIARMA_R.savePlot(fileNamePrefix=os.path.splitext(filePath)[0] + '_Right', fileType=plotFileFormat.lower(), figDpi=250)
 
         if register:
             xmlElement = ETree.Element('ARIsave')
