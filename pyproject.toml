@@ -1,0 +1,25 @@
+# https://packaging.python.org/en/latest/tutorials/packaging-projects/
+#https://stackoverflow.com/questions/6323860/sibling-package-imports/50193944#50193944
+
+[project]
+name = "CAAos"
+version = "0.2.0"
+authors = [
+  { name="Fernando Moura", email="fernando.moura@ufabc.edu.br" },
+]
+description = "A small example package"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU GPLv3",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/CAAosPlatform/CAAos"
+Issues = "https://github.com/CAAosPlatform/CAAos/issues"
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"

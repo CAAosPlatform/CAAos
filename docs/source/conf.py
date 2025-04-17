@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# CAAos Platform documentation build configuration file, created by
+# api Platform documentation build configuration file, created by
 # sphinx-quickstart on Wed Aug  7 14:04:25 2019.
 #
 # This file is execfile()d with the current directory set to its
@@ -59,7 +59,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'CAAos Platform'
+project = u'api Platform'
 copyright = u'2021, Fernando Moura, Angela Salinet, João Salinet Júnior'
 author = u'Fernando Moura, Angela Salinet, João Salinet Júnior'
 
@@ -198,7 +198,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'CAAosPlatform.tex', u'CAAos Platform Documentation',
+    (master_doc, 'CAAosPlatform.tex', u'api Platform Documentation',
      u'Fernando Moura, Angela Salinet, João Salinet Júnior', 'manual'),
 ]
 
@@ -228,7 +228,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'CAAos Platform', u'CAAos Platform Documentation',
+    (master_doc, 'api Platform', u'api Platform Documentation',
      [author], 1)
 ]
 
@@ -242,7 +242,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'CAAos Platform', u'CAAosPlatform Documentation',
+    (master_doc, 'api Platform', u'CAAosPlatform Documentation',
      author, 'CAAosPlatform', 'One line description of project.',
      'Miscellaneous'),
 ]
