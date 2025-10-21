@@ -15,17 +15,20 @@ class monitoringSetupWidget(QtWidgets.QMainWindow):
     signal_samplingRate = QtCore.pyqtSignal()
     signal_startMonitoring = QtCore.pyqtSignal()
     signal_updateInterval = QtCore.pyqtSignal()
+    signal_totalTime = QtCore.pyqtSignal()
     signal_simulatePatient = QtCore.pyqtSignal()
+    signal_simulatePatientPath = QtCore.pyqtSignal()
 
-    def __init__(self, parent=None, samplingRate_Hz=100.0, patientName='Patient Name', birthdate='31:01:1900', updateInterval_s=5.0):
+    def __init__(self, parent=None, samplingRate_Hz=100.0, patientName='Patient Name', birthdate='31:01:1900', updateInterval_s=5.0,
+                 totalTime_s=10*60, simulatePatientPath=None):
         super().__init__(parent)
 
-        default = 100.0
         self.samplingRate_Hz = samplingRate_Hz
         self.patientName = patientName
         self.birthdate = birthdate
         self.updateInterval_s = updateInterval_s
-
+        self.totalTime_s = totalTime_s
+        self.simulatePatientPath = simulatePatientPath
         self.initUI()
 
     def initUI(self):
@@ -54,8 +57,15 @@ class monitoringSetupWidget(QtWidgets.QMainWindow):
         simulatePatient.stateChanged.connect(lambda: self.registerOptions('simulatePatient'))
         formLayout.addRow('Simulate patient', simulatePatient)
 
-        # file path
-        self.simulatePatientPath ='../../data/CG24HG.EXP'
+        # simulate patient path
+        self.simulatePatientPathWidget = QtWidgets.QLineEdit()
+        self.simulatePatientPathWidget.setText(self.simulatePatientPath)
+        self.simulatePatientPathWidget.setFixedWidth(190)
+        self.simulatePatientPathWidget.editingFinished.connect(lambda: self.registerOptions('simulatePatientPath'))
+        self.simulatePatientPathWidget.returnPressed.connect(lambda: self.registerOptions('simulatePatientPath'))
+        self.simulatePatientPathWidget.setEnabled(True)
+        formLayout.addRow('Simulate patient path', self.simulatePatientPathWidget)
+
 
         # sampling rate (Hz)
         samplingRateWidget = QtWidgets.QDoubleSpinBox()
@@ -87,7 +97,7 @@ class monitoringSetupWidget(QtWidgets.QMainWindow):
 
         # update interval (s)
         samplingRateWidget = QtWidgets.QDoubleSpinBox()
-        samplingRateWidget.setRange(1, 30)
+        samplingRateWidget.setRange(1, 60)
         samplingRateWidget.setDecimals(2)
         samplingRateWidget.setSingleStep(1)
         samplingRateWidget.setFixedWidth(130)
@@ -95,6 +105,15 @@ class monitoringSetupWidget(QtWidgets.QMainWindow):
         samplingRateWidget.valueChanged.connect(lambda: self.registerOptions('updateInterval'))
         formLayout.addRow('Signal update interval (s)', samplingRateWidget)
 
+        # total time (s)
+        totalTimeWidget = QtWidgets.QDoubleSpinBox()
+        totalTimeWidget.setRange(1, 60)
+        totalTimeWidget.setDecimals(2)
+        totalTimeWidget.setSingleStep(1)
+        totalTimeWidget.setFixedWidth(130)
+        totalTimeWidget.setValue(self.totalTime_s/60)  # convert to minutes for display
+        totalTimeWidget.valueChanged.connect(lambda: self.registerOptions('totalTime_s'))
+        formLayout.addRow('Total Acquisition time (min)', totalTimeWidget)
         # Add a submit button
         startButtonWidget = QtWidgets.QPushButton('Start monitoring')
         startButtonWidget.setFixedWidth(100)
@@ -122,9 +141,19 @@ class monitoringSetupWidget(QtWidgets.QMainWindow):
         if type == 'updateInterval':
             self.updateInterval_s = self.sender().value()
             self.signal_updateInterval.emit()
+        if type == 'totalTime_s':
+            self.totalTime_s = self.sender().value()*60  # convert to seconds
+            self.signal_totalTime.emit()
         if type == 'simulatePatient':
             self.simulatePatient = self.sender().isChecked()
+            if self.simulatePatient:
+                self.simulatePatientPathWidget.setEnabled(True)
+            else:
+                self.simulatePatientPathWidget.setEnabled(False)
             self.signal_simulatePatient.emit()
+        if type == 'simulatePatientPath':
+            self.simulatePatientPath = self.sender().text()
+            self.signal_simulatePatientPath.emit()
 
 
 

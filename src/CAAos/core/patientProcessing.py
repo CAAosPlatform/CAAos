@@ -1293,7 +1293,7 @@ class patientProcessing():
         >>> myCase=pD('data.EXP')
         >>> myCase.loadData()
         >>> myCase.synchronizeSignals(channelList=[0,1,2],method='correlation',ABPdelay_s=0.0,register=True) # synchronize channels 0, 1 and 2, using correlation method
-        >>> myCase.signals[2].setType('ABP')
+        >>> myCase.signals[2].setInfo(sigType='ABP')
         >>> myCase.synchronizeSignals(channelList=None,method='fixedAPB',ABPdelay_s=0.2,register=True) # synchronize ABP channel, using the fixed delay method
 
         """
@@ -1334,12 +1334,14 @@ class patientProcessing():
             channel = channelList[ch]
             delay = delays[ch]
             # print('ch: %d   delay:%d' %(channel,delay))
-            self.signals[channel].cropFromLeft(delay, register=False)
+            self.signals[channel].cropFromStart(delay, register=False)
             length.append(self.signals[channel].nPoints)
 
         minLength = min(length)
         for ch in range(self.nChannels):
-            self.signals[ch].cropFromRight(self.signals[ch].nPoints - minLength, register=False)
+            self.signals[ch].cropFromEnd(self.signals[ch].nPoints - minLength, register=False)
+
+        #print('signal Length: %d' % self.signals[0].nPoints)
 
         # register operation
         if register:

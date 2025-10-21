@@ -12,9 +12,15 @@ inputPath = '../../data/'  # do not forghet the last /
 outputPath = inputPath
 
 patient.newJob( outputFile=outputPath + 'temp_monitoring.exp')
-#patient.startAcquisition(totalTime_sec=30.0, samplingRate_Hz=10.0, patientName="Temp", birthDate="01:01:1900")
-simulationFile='/home/fernando/servidor/programas/00_UFABC/ProjetoPosDocAngela/data/CG24HG.EXP'
-patient.startAcquisitionSimulationMode(simulationFile,totalTime_sec=30.0, samplingRate_Hz=10.0, patientName="Temp", birthDate="01:01:1900")
+
+# use the following line to start a real acquisition
+patient.startAcquisition(totalTime_sec=30.0, samplingRate_Hz=10.0, patientName="Temp", birthDate="01:01:1900")
+
+# use the following line to start a simulation acquisition
+# DO NOT use the simulation mode if you are using MCC1809mockup.py!
+#simulationFile='/home/fernando/servidor/programas/00_UFABC/ProjetoPosDocAngela/data/CG24HG.EXP'
+#patient.startAcquisitionSimulationMode(simulationFile,totalTime_sec=30.0, samplingRate_Hz=10.0, patientName="Temp", birthDate="01:01:1900")
+
 patient.initSignalUpdateTimer( interval_sec=5,saveToFile=True)
 
 print('oi')
@@ -51,3 +57,6 @@ patient.saveMX(filePath=outputPath + 'lixo.mx', plotFileFormat='png', format='si
 
 patient.saveJob(fileName=outputPath + 'lixo.job')
 patient.saveSIG(outputPath + 'lixo.sig')
+
+
+print('fim!')

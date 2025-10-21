@@ -2,13 +2,13 @@
     <preprocessing>
       <signalInfo>
         <channel>0</channel>
-        <label>MCA_L_To_Probe_Env</label>
+        <label>MCA_R_To_Probe_Env</label>
         <unit>cm/s</unit>
         <type>CBFV_L</type>
       </signalInfo>
       <signalInfo>
         <channel>1</channel>
-        <label>MCA_R_To_Probe_Env</label>
+        <label>MCA_L_To_Probe_Env</label>
         <unit>cm/s</unit>
         <type>CBFV_R</type>
       </signalInfo>

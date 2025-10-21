@@ -12,7 +12,22 @@ from CAAos.tools import tools
 
 
 class signal():
+    """
+    This class defines a signal object. The signal object contains the signal data and its properties.
+    It also contains methods to process the signal data and a beat2beat object to store the beat-to-beat signals.
+    """
     def __init__(self, channel, label, unit, data, samplingRate_Hz, operationsXML):
+        """
+        This function initializes a signal object. The signal object contains the signal data and its properties.
+
+        Args:
+            channel (int): number of the channel.
+            label (str): lable of the plots
+            unit (str): unit of the signal
+            data (numpy.ndarray): 1D numpy array with the signal data
+            samplingRate_Hz (float): sampling rate in Hz
+            operationsXML (lxml.etree._Element): XML element to store the operations performed on the signal
+        """
         self.channel = channel
         self.label = label
         self.unit = unit
@@ -23,20 +38,24 @@ class signal():
         self.operationsXML = operationsXML
 
     def info(self):
+        """
+        Print the signal information.
+        """
         print('-------------------------------')
         print('Channel: %d' % self.channel)
         print('label: ' + self.label)
         print('unit: ' + self.unit)
         print('sigType: ' + str(self.sigType))
         print('nPoints: %d' % self.nPoints)
+        print('samplingRate (Hz): %g' % self.samplingRate_Hz)
         print('-------------------------------')
 
     def getTimeVector(self, t0=0.0):
         """
-        Returns a vector with the time values of the signal.
+        Returns a vector with the time values of thesignal samples.
 
         Args:
-            t0 (float): initial time in seconds. Default is 0.0.
+            t0 (float): initial time in seconds. Default is 0.0 s.
 
         Returns:
             numpy.ndarray: vector with time values in seconds.
@@ -45,22 +64,21 @@ class signal():
 
     def saveData(self, fileObj):
         """
-        Save the signal data to a file object in a specific format.
+        Save the signal data to a file object in the following format:
+
+        CHANNEL=int
+        LABEL=string
+        UNIT=string
+        SIGNAL_TYPE=string
+        SAMPLING_RATE_HZ=float
+        NPOINTS=int
+        DATA=[ list of floats ]
 
         Args:
             fileObj (fileobj): output file object where data will be saved.
 
         Returns:
-
-        Format:
-
-        CHANNEL=0
-        LABEL=MCA_L_To_Probe_Env
-        UNIT=cm/s
-        SIGNAL_TYPE=None
-        SAMPLING_RATE_HZ=100
-        NPOINTS=30676
-        DATA=[  0.   0.   ..... 0.   0.   0.]
+            None
 
         """
         fileObj.write('CHANNEL=%d\n' % self.channel)
@@ -76,6 +94,27 @@ class signal():
         fileObj.write('=' * 80 + '\n')
 
     def saveB2B(self, fileObj):
+        """
+        Save the beat-to-beat data to a file object in  the following format:
+
+        CHANNEL=int
+        LABEL=string
+        UNIT=string
+        SIGNAL_TYPE=string
+        SAMPLING_RATE_HZ=float
+        NPOINTS=int
+        TIME_(S)=[ list of floats ]
+        MAX=[ list of floats ]    % maximum values of each beat
+        MIN=[ list of floats ]    % minimum values of each beat
+        AVG=[ list of floats ]    % average values of each beat
+
+        Args:
+            fileObj (fileobj): output file object where data will be saved.
+
+        Returns:
+            None
+
+        """
         fileObj.write('CHANNEL=%d\n' % self.channel)
         fileObj.write('LABEL=%s\n' % self.label)
         fileObj.write('UNIT=%s\n' % self.unit)
@@ -93,11 +132,30 @@ class signal():
         fileObj.write('=' * 80 + '\n')
 
     def registerOperation(self, xmlElement):
-        """add channel information to the element and add to the XML tree"""
+        """
+        This function add the channel number information to the operation ETree element and appends it to the operationsXML tree.
+        Args:
+            xmlElement (ETree.Element): element describing the operation to be registered.
+
+        Returns:
+            None
+        """
         tools.ETaddElement(parent=xmlElement, tag='channel', text=str(self.channel), position=0)
         self.operationsXML.append(xmlElement)
 
     def setInfo(self,label=None,unit=None,sigType=None, register=True):
+        """
+        Set signal information. Any argument can be None, in this case the corresponding attribute will not be changed.
+
+        Args:
+            label (str): new label
+            unit (str): new unit
+            sigType (str): one of the following: 'ABP','CBFV_L', 'CBFV_R', 'ETCO2', None
+            register (bool): whether to register the operation in the operations file. Default is True.
+
+        Returns:
+            None:
+        """
         if label is not None:
             self.label = label
         if unit is not None:
@@ -116,109 +174,138 @@ class signal():
                 tools.ETaddElement(parent=xmlElement, tag='type', text=sigType)
             self.registerOperation(xmlElement)
 
-    def setLabel(self, newLabel, register=True):
-        """ this function is deprecated. Use setInfo instead"""
-        self.label = newLabel
-
-        # register operation
-        if register:
-            xmlElement = ETree.Element('setLabel')
-            tools.ETaddElement(parent=xmlElement, tag='label', text=newLabel)
-            self.registerOperation(xmlElement)
-
-    def setUnit(self, newUnit, register=True):
-        self.unit = newUnit
-
-        # register operation
-        if register:
-            xmlElement = ETree.Element('setUnit')
-            tools.ETaddElement(parent=xmlElement, tag='unit', text=newUnit)
-            self.registerOperation(xmlElement)
-        """ this function is deprecated. Use setInfo instead"""
-
-    def setType(self, newType, register=True):
-        """ this function is deprecated. Use setInfo instead"""
-        self.sigType = newType
-
-        # register operation
-        if register:
-            xmlElement = ETree.Element('setType')
-            tools.ETaddElement(parent=xmlElement, tag='type', text=newType)
-            self.registerOperation(xmlElement)
-
-    def findPeaksBySegments(self, segmentLengh_s=20.0):
-        segmentLength = segmentLengh_s * self.samplingRate_Hz  # equivalent to 20seconds of data
-        nSegments = int(self.nPoints / segmentLength)
-        fmax_bpm = 200
-        DeltaTMin = int(60.0 / float(fmax_bpm) * self.samplingRate_Hz)  # number of samples that represents a frequency of 220bpm
-
-        dataSegments = np.array_split(self.data, nSegments)
-
-        peakIdx = np.array([], dtype=int)
-        valleyIdx = np.array([], dtype=int)
-
-        idxStart = 0
-        for s in range(len(dataSegments)):
-            data = dataSegments[s]
-            sMax = np.percentile(data, 90.0)
-            smph = np.percentile(data, 60.0)
-            sMin = np.percentile(data, 10.0)
-            prominence = (sMax - sMin) * 0.1
-
-            peakIdxSegment = tools.detect_peaks(data, mph=smph, mpd=DeltaTMin, threshold=0, edge='rising', kpsh=False, MinPeakProminence=prominence,
-                                                MinPeakProminenceSide='left', valley=False)
-
-            valleyIdxSegment = []
-            for i in peakIdxSegment:
-                cumulativeProminence = 0
-                idx = i
-                dx = data[idx] - data[idx - 1]
-                while idx >= 0 and (dx > 0 or cumulativeProminence < (sMax - sMin) * 0.5):
-                    cumulativeProminence += dx
-                    idx -= 1
-                    dx = data[idx] - data[idx - 1]
-
-                if idx >= 0:
-                    valleyIdxSegment.append(idx)
-
-            valleyIdxSegment = np.array(valleyIdxSegment)
-            # print(valleyIdxSegment)
-            peakIdx = np.append(peakIdx, peakIdxSegment + idxStart, axis=None)
-            valleyIdx = np.append(valleyIdx, valleyIdxSegment + idxStart, axis=None)
-            idxStart += data.shape[0]
-
-        # print(peakIdx)
-        peakVal = self.data[peakIdx]
-        valleyVal = self.data[valleyIdx]
-
-        return [peakIdx, peakVal, valleyIdx, valleyVal]
+    # def setLabel(self, newLabel, register=True):
+    #     """ this function is deprecated. Use setInfo instead"""
+    #     self.label = newLabel
+    #
+    #     # register operation
+    #     if register:
+    #         xmlElement = ETree.Element('setLabel')
+    #         tools.ETaddElement(parent=xmlElement, tag='label', text=newLabel)
+    #         self.registerOperation(xmlElement)
+    #
+    # def setUnit(self, newUnit, register=True):
+    #     """ this function is deprecated. Use setInfo instead"""
+    #     self.unit = newUnit
+    #
+    #     # register operation
+    #     if register:
+    #         xmlElement = ETree.Element('setUnit')
+    #         tools.ETaddElement(parent=xmlElement, tag='unit', text=newUnit)
+    #         self.registerOperation(xmlElement)
+    #
+    # def setType(self, newType, register=True):
+    #     """ this function is deprecated. Use setInfo instead"""
+    #     self.sigType = newType
+    #
+    #     # register operation
+    #     if register:
+    #         xmlElement = ETree.Element('setType')
+    #         tools.ETaddElement(parent=xmlElement, tag='type', text=newType)
+    #         self.registerOperation(xmlElement)
+    #
+    # def findPeaksBySegments(self, segmentLengh_s=20.0):
+    #     """ this function is deprecated. Use findPeaks instead"""
+    #
+    #     segmentLength = segmentLengh_s * self.samplingRate_Hz  # equivalent to 20seconds of data
+    #     nSegments = int(self.nPoints / segmentLength)
+    #     fmax_bpm = 200
+    #     DeltaTMin = int(60.0 / float(fmax_bpm) * self.samplingRate_Hz)  # number of samples that represents a frequency of 220bpm
+    #
+    #     dataSegments = np.array_split(self.data, nSegments)
+    #
+    #     peakIdx = np.array([], dtype=int)
+    #     valleyIdx = np.array([], dtype=int)
+    #
+    #     idxStart = 0
+    #     for s in range(len(dataSegments)):
+    #         data = dataSegments[s]
+    #         sMax = np.percentile(data, 90.0)
+    #         smph = np.percentile(data, 60.0)
+    #         sMin = np.percentile(data, 10.0)
+    #         prominence = (sMax - sMin) * 0.1
+    #
+    #         peakIdxSegment = tools.detect_peaks(data, mph=smph, mpd=DeltaTMin, threshold=0, edge='rising', kpsh=False, MinPeakProminence=prominence,
+    #                                             MinPeakProminenceSide='left', valley=False)
+    #
+    #         valleyIdxSegment = []
+    #         for i in peakIdxSegment:
+    #             cumulativeProminence = 0
+    #             idx = i
+    #             dx = data[idx] - data[idx - 1]
+    #             while idx >= 0 and (dx > 0 or cumulativeProminence < (sMax - sMin) * 0.5):
+    #                 cumulativeProminence += dx
+    #                 idx -= 1
+    #                 dx = data[idx] - data[idx - 1]
+    #
+    #             if idx >= 0:
+    #                 valleyIdxSegment.append(idx)
+    #
+    #         valleyIdxSegment = np.array(valleyIdxSegment)
+    #         # print(valleyIdxSegment)
+    #         peakIdx = np.append(peakIdx, peakIdxSegment + idxStart, axis=None)
+    #         valleyIdx = np.append(valleyIdx, valleyIdxSegment + idxStart, axis=None)
+    #         idxStart += data.shape[0]
+    #
+    #     # print(peakIdx)
+    #     peakVal = self.data[peakIdx]
+    #     valleyVal = self.data[valleyIdx]
+    #
+    #     return [peakIdx, peakVal, valleyIdx, valleyVal]
 
     def findPeaks(self, method='ampd', findPeaks=True, findValleys=False, register=False):
+        """
+        Find peaks and/or valleys in the signal data.
+
+        Args:
+            method (str): method to be used. Options are: 'ampd' (default), 'md' (deprecated)
+            findPeaks (bool): whether to find peaks (default is True)
+            findValleys (bool): whether to find valleys (default is False)
+            register (bool): whether to register the operation in the operations file. Default is False.
+
+        Returns:
+            List[numpy.ndarray]: a list with four elements:
+                - peakIdx: numpy array with the indexes of the peaks (None if findPeaks is False)
+                - peakVal: numpy array with the values of the peaks (None if findPeaks is False)
+                - valleyIdx: numpy array with the indexes of the valleys (None if findValleys is False)
+                - valleyVal: numpy array with the values of the valleys (None if findValleys is False)
+
+        """
 
         peakIdx = None
         peakVal = None
         valleyIdx = None
         valleyVal = None
 
+        def removeNearbyPeaks(peakIdx, fmax_bpm = 250):
+            # remove peaks that are too close to each other. For that we assume a maximum heart rate (defaults to 250bpm) and compute
+            # the associated time between peaks. Any sucessive peak that is closer than this mininum time will be removed
+            DeltaIdxMin = int(60.0 / float(fmax_bpm) * self.samplingRate_Hz)  # number of samples that represents a frequency of 250bpm
+
+            temp = []
+            for i in range(len(peakIdx) - 1):
+                if peakIdx[i + 1] - peakIdx[i] > DeltaIdxMin:  # if they are not too  close
+                    temp.append(peakIdx[i])
+                else:
+                    temp.append(max(peakIdx[i], peakIdx[i + 1]))  # otherwise adopt the largest index between these two peak candidates
+            return temp
+
         if method.lower() == 'ampd':
             if findPeaks:
 
                 peakIdx = ampdLib.ampdFast(self.data, 10, LSMlimit=0.2)
-
-                fmax_bpm = 250
-                DeltaTMin = int(60.0 / float(fmax_bpm) * self.samplingRate_Hz)  # number of samples that represents a frequency of 250bpm
-                temp = []
-                for i in range(len(peakIdx) - 1):
-                    if peakIdx[i + 1] - peakIdx[i] > DeltaTMin:  # 5 samples appart
-                        temp.append(peakIdx[i])
-                    else:
-                        temp.append(max(peakIdx[i], peakIdx[i + 1]))
-                peakIdx = temp
+                # remove peaks that are too close to each other
+                peakIdx = removeNearbyPeaks(peakIdx, fmax_bpm = 250) # 250 bmp max
 
             if findValleys:
                 valleyIdx = ampdLib.ampdFast(-self.data, 10, LSMlimit=0.1)
+                # remove peaks that are too close to each other
+                valleyIdx = removeNearbyPeaks(valleyIdx, fmax_bpm = 250) # 250 bmp max
 
         if method.lower() == 'md':
+            print('Find peaks: method "md" is deprecated. Use "ampd" instead.')
+            print('Find peaks: method "md" is deprecated. Use "ampd" instead.')
+            print('Find peaks: method "md" is deprecated. Use "ampd" instead.')
             fmax_bpm = 250
             sMax = np.percentile(self.data, 90.0)
             smph = np.percentile(self.data, 60.0)
@@ -250,13 +337,9 @@ class signal():
 
         if findPeaks:
             peakIdx = np.unique(peakIdx)  # removes eventual repeated indexes
+            peakVal = self.data[peakIdx]
         if findValleys:
             valleyIdx = np.unique(valleyIdx)  # removes eventual repeated indexes
-
-        if findPeaks:
-            peakVal = self.data[peakIdx]
-
-        if findValleys:
             valleyVal = self.data[valleyIdx]
 
         # register operation
@@ -269,8 +352,21 @@ class signal():
 
         return [peakIdx, peakVal, valleyIdx, valleyVal]
 
-    # if segmentIndexes=None (default) considers all data, otherwise it is expected a list with start and end indexes
     def yLimits(self, method='percentile', detrend=False, segmentIndexes=None):
+        """
+        Calculate the y-axis limits of the signal data.
+
+        Args:
+            method (str):
+                    'absolute': uses the absolute min and max values of the signal
+                    'percentile' (default): uses the 5th and 95th percentiles of the signal (default)
+            detrend (bool): removes the linear trend of the signal before calculating the limits
+            segmentIndexes (list or None):
+                     - None (default) considers all data
+                     - list: list with start and end indexes
+        Returns:
+            List[numpy.float64]:  [y_min, y_max]
+        """
         min = 0
         max = 0
 
@@ -293,6 +389,22 @@ class signal():
 
     # if segmentIndexes=None (default) considers all data, otherwise it is expected a list with start and end indexes
     def calibrate(self, valMax, valMin, method='percentile', segmentIndexes=None, register=True):
+        """
+        Calibrate the signal data to a new range [valMin, valMax] using linear interpolation.
+        Args:
+            valMax (float): maximum value of the new range.
+            valMin (float): minimum value of the new range.
+            method (string):
+                    'absolute': uses the absolute min and max values of the signal
+                    'percentile' (default): uses the 5th and 95th percentiles of the signal (default)
+            segmentIndexes (list or None):
+                     - None (default) considers all data
+                     - list: list with start and end indexes
+            register (bool): whether to register the operation in the operations file. Default is True.
+
+        Returns: None
+
+        """
 
         if valMax <= valMin:
             return
@@ -316,8 +428,25 @@ class signal():
             tools.ETaddElement(parent=xmlElement, tag='segmentIndexes', text=str(segmentIndexes).replace(',', ''))
             self.registerOperation(xmlElement)
 
-    # remove elemetns betwen start/end, including these limits.
     def cropInterval(self, start, end, register=True, RemoveSegment=False, segmentIndexes=None):
+        """
+        Remove elements between start and end indexes, including these limits.
+
+        Args:
+            start (int): start index
+            end (int): end index
+            register (bool): whether to register the operation in the operations file. Default is True.
+            RemoveSegment (bool):
+                if True, the start and end indexes will be adjusted to the nearest segmentIndexes values.
+                if False (default), the start and end indexes will be used as is.
+            segmentIndexes (Union[None, None]):
+                list with the start and end indexes of the segments.
+                if RemoveSegment is True, this argument must be provided.
+                if RemoveSegment is False (default), this argument will be ignored.
+
+        Returns:
+            None:
+        """
         # register operation
         if register:
             xmlElement = ETree.Element('cropInterval')
@@ -339,8 +468,19 @@ class signal():
         self.data = np.delete(self.data, range(start, end + 1))
         self.nPoints = self.data.shape[0]
 
-    # remove the specified number of elements from right. Ex: if nelem=1, removes only one element from right
-    def cropFromRight(self, nElem, register=True):
+    # remove the specified number of elements from right.
+    def cropFromEnd(self, nElem, register=True):
+        """
+        Remove the specified number of elements from the end (most recent data points) of the signal data.
+
+        Args:
+            nElem (int): number of elements to be removed from the end of the signal data.
+                Ex: if nelem=1, removes only one element from the end
+            register (bool): whether to register the operation in the operations file. Default is True.
+
+        Returns:
+            None:
+        """
         if nElem > self.nPoints:
             print('data does not have so many elements')
             return
@@ -350,7 +490,7 @@ class signal():
         self.cropInterval(self.nPoints - nElem, self.nPoints - 1, register)
 
     # remove the specified number of elements from right. Ex: if nelem=1, removes only one element from left
-    def cropFromLeft(self, nElem, register=True):
+    def cropFromStart(self, nElem, register=True):
         if nElem > self.nPoints:
             print('data does not have so many elements')
             return
@@ -359,10 +499,21 @@ class signal():
             return
         self.cropInterval(0, nElem - 1, register)
 
-    # valid methods:            'linear', 'nearest',
-    # spline methods:           'zero', 'slinear', 'quadratic', 'cubic',
-    # previoues or next values: 'previous', 'next'
     def resample(self, newSampleRate, method='linear', register=True):
+        """
+        Resample the signal data to a new sampling rate using interpolation.
+
+        Args:
+            newSampleRate (float): new sampling rate in Hz
+            method (string): interpolation method. Valid methods are:
+                    STANDARD METHODS: 'linear' (default), 'nearest', 'previous', 'next'
+                    SPLINE METHODS: 'zero', 'slinear', 'quadratic', 'cubic',
+            register (bool): whether to register the operation in the operations file. Default is True.
+
+        Returns:
+            None.
+
+        """
         xData = np.arange(self.nPoints) / self.samplingRate_Hz
         f = scipyInterpolate.interp1d(xData, self.data, kind=method, fill_value=(self.data[0], self.data[-1]), assume_sorted=True)
 
@@ -379,8 +530,20 @@ class signal():
             tools.ETaddElement(parent=xmlElement, tag='method', text=str(method))
             self.registerOperation(xmlElement)
 
-    # interpolate data in the interval [start,end], including the limits
     def interpolate(self, start, end, method='linear', register=True):
+        """
+        Interpolate the signal data in the interval [start, end] indices, including the limits. The original
+        values in this interval will be replaced by the interpolated values.
+
+        Args:
+            start (int):  start index
+            end (int): end index
+            method (string): 'linear' (default)
+            register (bool): whether to register the operation in the operations file. Default is True.
+
+        Returns:
+
+        """
         if (end + 1) > len(self.data) or start < 0 or (end + 1) < start:
             print('Invalid interval')
             return
@@ -407,6 +570,7 @@ class signal():
     def LPfilter(self, method='movingAverage', nTaps=5, order=3, register=True):
         """
         Apply a lowpass filter to the signal data.
+        OBSERVATION: The butterworth filter has a fixed cutoff frequency of 20Hz.
 
         Args:
             method (str): type of filter.
@@ -414,7 +578,8 @@ class signal():
                     - 'median': median filter
                     - 'butterworth': Butterworth filter
 
-            nTaps (int): number of taps for the filter. Used for movingAverage and median only. Must be odd number. Default is 5.
+            nTaps (int): number of taps for the filter. Used for movingAverage and median only.
+                         Must be odd number. Default is 5.
             order (int): order of the filter. used for butterworth only. Default is 3.
             register (bool): whether to register the filter in the operations file. Default is True.
 
@@ -452,9 +617,17 @@ class signal():
                 tools.ETaddElement(parent=xmlElement, tag='order', text=str(order))
             self.registerOperation(xmlElement)
 
-    # resampling methods
-    # valid methods:            'linear', 'nearest',
-    # spline methods:           'zero', 'slinear', 'quadratic', 'cubic',
-    # previoues or next values: 'previous', 'next'
     def beat2beat(self, beat_idx, resampleRate_Hz=100.0, resampleMethod='linear'):
+        """
+        Compute beat-to-beat data from the signal data.
+        Args:
+            beat_idx (numpy.ndarray): vector with the indexes of the detected beats (peaks)
+            resampleRate_Hz (float): resampling rate in Hz (default is 100.0 Hz)
+            resampleMethod (str): resampling method (default is 'linear'). Valid methods are:
+                    STANDARD METHODS: 'linear', 'nearest', 'previous', 'next'
+                    SPLINE METHODS: 'zero', 'slinear', 'quadratic', 'cubic',
+
+        Returns:
+            None:
+        """
         self.beat2beatData = signals_b2b.beat2beat(self.data, beat_idx, self.samplingRate_Hz, resampleRate_Hz, resampleMethod)

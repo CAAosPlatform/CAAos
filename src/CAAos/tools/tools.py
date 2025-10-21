@@ -4,6 +4,8 @@ import ntpath
 import os
 import posixpath
 from pathlib import Path, PureWindowsPath
+import time
+import datetime
 
 import numpy as np
 
@@ -547,3 +549,27 @@ class CARfreqRange():
     def getStd(self, signal, freqRange='ALL'):
         return np.nanstd(self.getSignal(signal, freqRange), ddof=0)
         return stdS
+
+
+def timed_wait(total_seconds, update_interval=1):
+    """
+    Waits for a specified total duration, printing the remaining time.
+
+    Args:
+        total_seconds (int): The total duration to wait in seconds.
+        update_interval (int): The interval in seconds at which to print
+                               the remaining time. Defaults to 1 second.
+    """
+    for remaining_time in range(total_seconds, 0, -update_interval):
+        print(f"\rTime remaining: {remaining_time} seconds", end='')
+        time.sleep(update_interval)
+    print("Wait complete!")
+
+def getCurrentTime():
+    """
+    Returns the current time as a formatted string.
+
+    Returns:
+        str: Current time in the format 'HH:MM:SS'.
+    """
+    return datetime.datetime.now().strftime("%Y_%m%b_%d_-_%H_%M_%S")

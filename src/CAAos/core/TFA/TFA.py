@@ -109,8 +109,8 @@ class transferFunctionAnalysis():
     def applyCohTreshold(self, signal):
         temp = copy.deepcopy(signal)
 
-        if self.nSegments > 15:
-            print('Warning:no coherence threshold defined for n>15 segments - all frequencies will be included')  # from carNET's matlab code
+        if self.nSegments > 15 or self.nSegments < 3:
+            print('Warning:no coherence threshold defined for n>15 segments or n<3 - all frequencies will be included')  # from carNET's matlab code
             criticalValue = 0.0
         else:
             criticalValue = ARsetup.cohThresholdDict[self.CohCutoffSignificanceLevel][self.nSegments]

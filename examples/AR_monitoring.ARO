@@ -2,8 +2,8 @@
     <ARanalysis>
       <PSDwelch>
         <useB2B>True</useB2B>
-        <overlap>0.5</overlap>
-        <segmentLength_s>100.0</segmentLength_s>
+        <overlap>0.9</overlap>
+        <segmentLength_s>20.0</segmentLength_s>
         <windowType>hann</windowType>
         <detrend>False</detrend>
         <filterType>rect</filterType>
@@ -13,15 +13,5 @@
         <estimatorType>H1</estimatorType>
       </TFA>
       <ARI/>
-      <ARIARMA>
-        <useB2B>True</useB2B>
-        <p>2</p>
-        <q>2</q>
-      </ARIARMA>
-      <MX>
-        <useB2B>True</useB2B>
-        <epochLength_s>60</epochLength_s>
-        <blockLength_s>10</blockLength_s>
-      </MX>
     </ARanalysis>
   </operations>

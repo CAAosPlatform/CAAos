@@ -142,11 +142,15 @@ class ARIcore():
         Pstep = Pafter * np.ones(2 * self.nDuration)
         Pstep[:self.NsamplesBeforeImpuse] = Pbefore
 
-        # check if we don't have negative averages in the begining of the signal. In this case end ARI.
+        # check if we don't have negative averages in the beginning of the signal. In this case end ARI.
         # this criteria was created by Panerai.
         if np.mean(VstepResponse[:int(self.nDuration / 2)]) < 0 or np.mean(VstepResponse[:20]) < 0:
             print('Error: Negative CBFv mean. Exiting')
-            return [None, None, None]
+            self.ARI_int = -1
+            self.ARI_frac = -1
+            self.ARIbestFit = np.zeros(self.nDuration)
+            self.TiecksErrors = np.zeros(10)
+            return
 
         [TiecksVresponse, TiecksError] = self.calcTiecksModel(Pstep, VstepResponse, self.nDuration, resampleFactor)
 

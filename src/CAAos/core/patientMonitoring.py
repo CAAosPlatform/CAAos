@@ -4,7 +4,21 @@ import numpy as np
 
 from lxml import etree as ETree
 
-from CAAos.acquisitionBoard.MCC1808 import MCC1808
+flagSimulateAcquisition = False  # flag to simulate acquisition
+
+if flagSimulateAcquisition:
+    print('WARNING: Using simulation mode for data acquisition!')
+    print('WARNING: Using simulation mode for data acquisition!')
+    print('WARNING: Using simulation mode for data acquisition!')
+    print('Check flagSimulateAcquisition in src/CAAos/acquisitionBoard/MCC1808_mockup.py')
+    print('WARNING: Using simulation mode for data acquisition!')
+    print('WARNING: Using simulation mode for data acquisition!')
+    print('WARNING: Using simulation mode for data acquisition!')
+
+    from CAAos.acquisitionBoard.MCC1808_mockup import MCC1808
+else:
+    from CAAos.acquisitionBoard.MCC1808 import MCC1808
+
 from CAAos.acquisitionBoard.signalGenerator import signalGenerator
 from CAAos.core.patientProcessing import patientProcessing
 from CAAos.tools import tools
@@ -52,17 +66,21 @@ class patientMonitoring(patientProcessing):
         dataNode = tools.ETaddElement(self.jobRootNode, tag='data', text=None, attribList=[['type', 'monitoring']])
         tools.ETaddElement(dataNode, 'outputFile', text=self.DATAfileName, attribList=[['type', self.DATAfileType]])
 
+        #tools.printET(self.jobRootNode)
         self.setActiveModule('preprocessing')
 
         #load preprocessing operations
         self.import_PPO_ARO_Operations('AR_monitoring.PPO', None, runOperations=False)
 
+        #tools.printET(self.jobRootNode)
         self.setActiveModule('ARanalysis')
-        #self.import_PPO_ARO_Operations('AR_monitoring.ARO', None, runOperations=False)
+        self.import_PPO_ARO_Operations('AR_monitoring.ARO', None, runOperations=False)
 
+        #tools.printET(self.jobRootNode)
         # create operations node for new operations
         self.createNewOperation()
 
+        tools.printET(self.jobRootNode)
 
     def startAcquisition(self, totalTime_sec=10.0, samplingRate_Hz=100, patientName='Patient Name', birthDate='1:1:0001'):
         """
@@ -137,7 +155,7 @@ class patientMonitoring(patientProcessing):
         # analog input configuration
         # ------------------------------------------
 
-        channels = [4, 5, 6, 7]
+        channels = [6, 7, 4, 5]  # Aout0 is connected to Ain6 and Ain7, Aout1 is connected to Ai4 and Ai5
 
         AinConf = [{'channel': channels[i], 'inputMode': 'SE', 'range': 'BIP10VOLTS'} for i in range(self.nChannels)]
         volt2velocity = 100 / 0.97  # (cm/s)/V  100cm/s=0,.97V. Dopplerbox manual, page 4-2
@@ -230,7 +248,7 @@ class patientMonitoring(patientProcessing):
         """
         currentSample = self.getCurrentSamplePerChannel()
 
-        print('Updating signals...')
+        print('--------- Update signals -------------')
         print('Last loaded sample: %d' % self.lastLoadedSample)
         print('Current sample: %d' % currentSample)
 
@@ -259,9 +277,11 @@ class patientMonitoring(patientProcessing):
 
         if saveToFile:
             if updateAllData:
-                rawData = rawData[:, currentSample:]
+                rawData = rawData[:, self.lastLoadedSample:currentSample]
 
             with open(self.DATAfileName, 'a') as file:
+                print('-------------------------- saving data----------------------------')
+                print('raw data size: %d' % rawData.shape[1])
                 for i in range(rawData.shape[1]):
                     time = self.examDate + timedelta(seconds=(self.lastLoadedSample + i) * 1.0 / self.samplingRate_Hz)
                     examDate = self.examDate.strftime("%H:%M:%S:%f")[:-4]
@@ -276,6 +296,7 @@ class patientMonitoring(patientProcessing):
         if applyOperations:
             self.applyOperations()
 
+        print('--------------------------------------')
         return True
 
     def applyOperations(self):
@@ -308,7 +329,7 @@ class patientMonitoring(patientProcessing):
             sampledData: numpy array with the acquired data. Each row is a channel.
 
         """
-        return self.myDAQ.AiDevice.dataArrayNP[:, startSample:endSample]
+        return np.copy(self.myDAQ.AiDevice.dataArrayNP[:, startSample:endSample])
 
     def getCurrentSamplePerChannel(self):
         """
@@ -317,28 +338,10 @@ class patientMonitoring(patientProcessing):
         Returns:
 
         """
-        """
-                Status:
-                   status==0 Idle
-                   status==1 Running
 
-                transferStatus: progress of a scan operation.
+        status, current_scan_count, current_index, current_total_count = self.myDAQ.AiDevice.getstatus()
 
-
-
-                """
-        status, transferStatus = self.myDAQ.AiDevice.device.get_scan_status()
-
-        # current_index: The index into the data buffer immediately following the last sample transferred.
-        current_index = transferStatus.current_index
-
-        # current_total_count: The total number of samples transferred since the scan started.
-        current_total_count = transferStatus.current_total_count
-
-        # current_scan_count: The number of samples per channel transferred since the scan started.
-        current_scan_count = transferStatus.current_scan_count
-
-        return transferStatus.current_scan_count
+        return current_scan_count
 
     def saveAcquisitionHeader(self, patientName='', birthDate='1:1:0001'):
         # create EXP header file
