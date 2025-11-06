@@ -14,19 +14,41 @@
       </signalInfo>
       <signalInfo>
         <channel>2</channel>
-        <label>Analog_1</label>
-        <unit>mV</unit>
+        <label>Blood pressure</label>
+        <unit>V</unit>
         <type>ABP</type>
       </signalInfo>
       <signalInfo>
         <channel>3</channel>
-        <label>Analog_8</label>
-        <unit>mV</unit>
+        <label>ETCO2</label>
+        <unit>V</unit>
+        <type>ETCO2</type>
       </signalInfo>
       <synchronize>
         <method>fixedAPB</method>
         <ABPdelay_s>0.9</ABPdelay_s>
       </synchronize>
+      <calibrate>
+        <channel>0</channel>
+        <valMin>20.0</valMin>
+        <valMax>150.0</valMax>
+        <method>percentile</method>
+        <segmentIndexes>None</segmentIndexes>
+      </calibrate>
+      <calibrate>
+        <channel>1</channel>
+        <valMin>20.0</valMin>
+        <valMax>150.0</valMax>
+        <method>percentile</method>
+        <segmentIndexes>None</segmentIndexes>
+      </calibrate>
+      <calibrate>
+        <channel>2</channel>
+        <valMin>90.0</valMin>
+        <valMax>140.0</valMax>
+        <method>percentile</method>
+        <segmentIndexes>None</segmentIndexes>
+      </calibrate>
       <findRRmarks>
         <refChannel>2</refChannel>
         <method>ampd</method>
