@@ -3,7 +3,7 @@ import sys
 from matplotlib import pyplot as plt
 import numpy as np
 
-from CAAos.core.ARI import ARIARMA
+from caaos.core.ARI import ARIARMA
 
 if sys.version_info.major == 2:
     sys.stdout.write('Sorry! This program requires Python 3.x\n')

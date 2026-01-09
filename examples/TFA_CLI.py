@@ -3,8 +3,8 @@ import glob
 
 import numpy as np
 
-from CAAos.core.TFA import PSDestimator
-from CAAos.core.TFA import TFA
+from caaos.core.TFA import PSDestimator
+from caaos.core.TFA import TFA
 
 if sys.version_info.major == 2:
     sys.stdout.write('Sorry! This program requires Python 3.x\n')

@@ -3,7 +3,7 @@ import sys
 
 
 import numpy as np
-from CAAos.core.ARI import ARI
+from caaos.core.ARI import ARI
 
 if sys.version_info.major == 2:
     sys.stdout.write('Sorry! This program requires Python 3.x\n')

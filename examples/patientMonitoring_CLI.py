@@ -1,7 +1,7 @@
 import sys
 import time
 
-from CAAos.core import patientMonitoring
+from caaos.core import patientMonitoring
 
 if sys.version_info.major == 2:
     sys.stdout.write('Sorry! This program requires Python 3.x\n')

@@ -1,6 +1,6 @@
 import sys
 
-from CAAos.core import patientProcessing
+from caaos.core import patientProcessing
 
 if sys.version_info.major == 2:
     sys.stdout.write('Sorry! This program requires Python 3.x\n')

@@ -1,19 +1,23 @@
-# https://packaging.python.org/en/latest/tutorials/packaging-projects/
-#https://stackoverflow.com/questions/6323860/sibling-package-imports/50193944#50193944
-
 [project]
-name = "CAAos"
-version = "0.2.0"
+name = "caaos"
+version = "0.2.6a9"
+description = "Cerebral Autoregulation Assessment Open Source Platform"
 authors = [
-  { name="Fernando Moura", email="fernando.moura@ufabc.edu.br" },
+    {name = "fsmMLK",email = "fsmMLK@users.noreply.github.com"}
 ]
-description = "A small example package"
+license = {text = "gpl"}
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: GNU GPLv3",
     "Operating System :: OS Independent",
+]
+dependencies = [
+    "scipy",
+    "matplotlib",
+    "lxml",
+    "pyqt5",
+    "pyqtgraph"
 ]
 
 [project.urls]
@@ -21,5 +25,22 @@ Homepage = "https://github.com/CAAosPlatform/CAAos"
 Issues = "https://github.com/CAAosPlatform/CAAos/issues"
 
 [build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core>=2.0.0,<3.0.0",
+    "scipy",
+    "matplotlib",
+    "lxml",
+    "pyqt5",
+    "pyqtgraph"]
+build-backend = "poetry.core.masonry.api"
+
+
+
+
+
+
+
+
+
+
+
+

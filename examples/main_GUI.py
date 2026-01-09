@@ -4,7 +4,7 @@ import platform
 
 from PyQt5 import QtGui, QtWidgets
 
-from CAAos.GUI.main_GUI import GuiMain
+from caaos.GUI.main_GUI import GuiMain
 
 if sys.version_info.major == 2:
     sys.stdout.write('Sorry! This program requires Python 3.x\n')

@@ -4,8 +4,8 @@ import time
 import numpy as np
 from matplotlib import pyplot as plt
 
-from CAAos.acquisitionBoard.MCC1808 import MCC1808
-from CAAos.acquisitionBoard.signalGenerator import signalGenerator
+from caaos.acquisitionBoard.MCC1808 import MCC1808
+from caaos.acquisitionBoard.signalGenerator import signalGenerator
 
 if sys.version_info.major == 2:
     sys.stdout.write('Sorry! This program requires Python 3.x\n')

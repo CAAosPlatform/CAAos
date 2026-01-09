@@ -1,6 +1,6 @@
 import sys
 
-from CAAos.core.Mx import Mx
+from caaos.core.Mx import Mx
 import numpy as np
 
 if sys.version_info.major == 2:
