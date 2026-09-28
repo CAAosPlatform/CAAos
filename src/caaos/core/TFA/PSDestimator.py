@@ -32,20 +32,30 @@ class PSDestimator():
         self.overlap = overlap
         self.segmentLength = round(self.Fs_Hz * segmentLength_s)
         self.shiftSize = round((1.0 - self.overlap) * self.segmentLength)
-        self.nSegments = int((len(self.dataX) - self.segmentLength) / self.shiftSize) + 1  # atention: in python 3.x, / is float division!
+        print(len(self.dataX))
+        print(self.segmentLength)
+        if len(self.dataX) >= self.segmentLength:
+            self.nSegments = int((len(self.dataX) - self.segmentLength) / self.shiftSize) + 1  # atention: in python 3.x, / is float division!
+        else:
+            self.nSegments = 0
         self.windowType = windowType
 
     def computeWelch(self):
-        self.buildWindow(self.windowType)
-        self.DFTx, self.freq = self.DFT(self.dataX)
-        self.DFTy, _ = self.DFT(self.dataY)
+        if self.nSegments>0:
+            self.buildWindow(self.windowType)
+            self.DFTx, self.freq = self.DFT(self.dataX)
+            self.DFTy, _ = self.DFT(self.dataY)
 
-        self.Sxx = self.getAutoSpectrum(self.DFTx, forceReal=True)
-        self.Syy = self.getAutoSpectrum(self.DFTy, forceReal=True)
-        self.Sxy = self.getCrossSpectrum(self.DFTx, self.DFTy)
-        self.Syx = self.getCrossSpectrum(self.DFTy, self.DFTx)
+            self.Sxx = self.getAutoSpectrum(self.DFTx, forceReal=True)
+            self.Syy = self.getAutoSpectrum(self.DFTy, forceReal=True)
+            self.Sxy = self.getCrossSpectrum(self.DFTx, self.DFTy)
+            self.Syx = self.getCrossSpectrum(self.DFTy, self.DFTx)
 
-        self.freqRangeExtractor = tools.CARfreqRange(self.freq)
+            self.freqRangeExtractor = tools.CARfreqRange(self.freq)
+            return True
+        else:
+            print('Warning: Data length too short. Skipping PSD estimation... Please collect more data')
+            return False
 
     def filterAll(self, filterType='rect', nTaps=2, keepFirst=True):
         self.Sxx = self.LPfilter(self.Sxx, filterType, nTaps, keepFirst)
@@ -113,7 +123,8 @@ class PSDestimator():
             else:
                 Sxx += np.multiply(np.conjugate(DFTx[i]), DFTx[i]) * self.Ts / normWindowSq
 
-        Sxx /= self.nSegments  # divides by nSegments to compute the average Sxx
+        if self.nSegments>0:
+            Sxx /= self.nSegments  # divides by nSegments to compute the average Sxx
         return Sxx
 
     def getCrossSpectrum(self, DFTx, DFTy):
@@ -123,7 +134,8 @@ class PSDestimator():
         for i in range(self.nSegments):  # see notebook 3, page 36 equation 6
             Sxy += np.multiply(np.conjugate(DFTx[i]), DFTy[i]) * self.Ts / normWindowSq
 
-        Sxy /= self.nSegments  # divides by nSegments to compute the average Sxy
+        if self.nSegments>0:
+            Sxy /= self.nSegments  # divides by nSegments to compute the average Sxy
         return Sxy
 
     def LPfilter(self, signal, filterType='triangular', nTaps=3, keepFirst=False):

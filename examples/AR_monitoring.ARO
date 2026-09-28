@@ -1,17 +1,9 @@
   <operations imported="False">
     <ARanalysis>
-      <PSDwelch>
+      <ARIARMA>
         <useB2B>True</useB2B>
-        <overlap>0.9</overlap>
-        <segmentLength_s>20.0</segmentLength_s>
-        <windowType>hann</windowType>
-        <detrend>False</detrend>
-        <filterType>rect</filterType>
-        <nTapsFilter>2</nTapsFilter>
-      </PSDwelch>
-      <TFA>
-        <estimatorType>H1</estimatorType>
-      </TFA>
-      <ARI/>
+        <p>1</p>
+        <q>4</q>
+      </ARIARMA>
     </ARanalysis>
   </operations>

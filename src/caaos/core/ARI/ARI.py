@@ -46,6 +46,14 @@ def plota2(F1, F2, title, ylabel1=None, yLabel2=None):
     plt.show()
 
 
+def plota2junto(F1, F2, title):
+    plt.figure()
+    plt.suptitle(title)
+    plt.plot(F1,'b')
+    plt.plot(F2,'r')
+    plt.show()
+
+
 def plotaH(H, title):
     plota2(np.real(H), np.imag(H), title, ylabel1='Real', yLabel2='Imag')
 
@@ -116,13 +124,14 @@ class ARIcore():
         self.responseLength = 0
         self.NsamplesBeforeImpuse = 0
 
-    def calcARI(self):
+    def calcARI(self,duration_s=10.0):
         # ------------------------------------
-        # Panerai's ARI original parameters
-        self.nDuration = 50  # DURATION OF STEP RESPONSE FOR ARI ESTIMATION. For Ts=0.2s is equivalent to 10s
+        #  DURATION OF STEP RESPONSE FOR ARI ESTIMATION.
+        # Panerai's ARI original parameters nDuration =50  # For Ts=0.2s is equivalent to 10s
+        self.nDuration =int(duration_s/self.Ts)  # DURATION OF STEP RESPONSE FOR ARI ESTIMATION. For Ts=0.2s is
 
         if self.nDuration > self.responseLength / 2:
-            printf('ERROR: nDuration cannot be larger than self.responseLength. Exiting...')
+            print('ERROR: nDuration for ARIC computation cannot be larger than self.responseLength/2. Exiting...')
             sys.exit()
 
         # resampling EXPANSION FACTOR
@@ -141,6 +150,8 @@ class ARIcore():
         VstepResponse = self.stepResponse[:(2 * self.nDuration)]
         Pstep = Pafter * np.ones(2 * self.nDuration)
         Pstep[:self.NsamplesBeforeImpuse] = Pbefore
+
+        # plota2(Pstep, VstepResponse, title='Step response and pressure step', ylabel1='Pressure', yLabel2='Velocity')
 
         # check if we don't have negative averages in the beginning of the signal. In this case end ARI.
         # this criteria was created by Panerai.
@@ -209,12 +220,15 @@ class ARIcore():
         VstepResponseResampled = VstepResponseResampled[:resampleFactor * nDuration]
         FsResampled = resampleFactor * (1.0 / self.Ts)
 
+        # plota2(VstepResponseResampled, PstepResampled, title='Resampled Step response and pressure step',
+        # ylabel1='Pressure', yLabel2='Velocity')
+
         # --------------------
         # tiecks model
         # --------------------
         CRCP = 12.0,  # in mmHg
         # normalized pressure
-        PmeanControl = Pstep[0]  # average pressure before the step is constant. therefore the average equals the first sample
+        PmeanControl = PstepResampled[0]  # average pressure before the step is constant. therefore the average equals the first sample
         Pnorm = (PstepResampled - PmeanControl) / (PmeanControl - CRCP)  # Dp0=0
         nDuration_Resampled = PstepResampled.shape[0]
 
@@ -247,25 +261,40 @@ class ARIcore():
                 TiecksVresponse[ariIdx][k] = expAlpha * TiecksVresponse[ariIdx][k - 1] + (1.0 - expAlpha) * TiecksVresponse[ariIdx][k]
 
             # normalize tiecks model to fit vResponse amplitude
-            lengthWindow = 50 + 10  # 2 seconds + 10 samples  # following Panerai's method
+            lengthWindow = 50 + 10  # 2 seconds + 10 samples  # following Panerai's method.
+            # This window is used to find the peak only
             Vmax = np.amax(VstepResponseResampled[0:lengthWindow])
 
             if Vmax == 0.0:  # panerai's check
                 Vmax = 0.001
 
-            idxVmax = np.where(VstepResponseResampled[0:lengthWindow] == Vmax)[0][0]
 
-            xDen = TiecksVresponse[ariIdx][idxVmax] - TiecksVresponse[ariIdx][0]  # following Panerai's method
+            # set to true to have the same as Panerai's code
+            if False:
+                idxVmax = np.where(VstepResponseResampled[0:lengthWindow] == Vmax)[0][0]
+                xDen = TiecksVresponse[ariIdx][idxVmax] - TiecksVresponse[ariIdx][0]  # following Panerai's method
 
-            if xDen == 0.0:  # panerai's check
-                xDen = 0.001
+                if xDen == 0.0:  # panerai's check
+                    xDen = 0.001
 
-            # velocity normalization
-            a = (Vmax - VstepResponseResampled[0]) / xDen
-            b = Vmax - a * TiecksVresponse[ariIdx][idxVmax]
+                # velocity normalization
+                a = (Vmax - VstepResponseResampled[0]) / xDen
+                b = Vmax - a * TiecksVresponse[ariIdx][idxVmax]
+
+            else:
+                VmaxTiecks = np.amax(TiecksVresponse[ariIdx][0:lengthWindow])
+                xDen = np.amax(VmaxTiecks - TiecksVresponse[ariIdx][0])
+
+                if xDen == 0.0:  # panerai's check
+                    xDen = 0.001
+
+                # velocity normalization
+                a = (Vmax - VstepResponseResampled[0]) / xDen
+                b = Vmax - a * VmaxTiecks
 
             TiecksVresponse[ariIdx] = a * TiecksVresponse[ariIdx] + b
-            # plota2(VstepResponseResampled, TiecksVresponse[ariIdx], title='caoos')
+
+            # plota2junto(VstepResponseResampled, TiecksVresponse[ariIdx], title='ARI %d' % ariIdx)
 
             # mean square error between vResponse and Vresponse from Tiecks (resampled signals)
             error = np.sqrt(np.square(VstepResponseResampled - TiecksVresponse[ariIdx]).mean())
@@ -407,7 +436,6 @@ class ARIanalysis(ARIcore):
         #     |                                        |
         #    DC                                     Nyquist
         #  DC and Nyquist do not repeat!
-
         TF[int(self.Lsignal / 2)] = 0  # nyquist term do not repeat!
         tempTF = np.conjugate(np.flip(TF[1:int(self.Lsignal / 2)]))  # note I am skipping the 0-th term (DC)
         TF[(int(self.Lsignal / 2) + 1):] = tempTF

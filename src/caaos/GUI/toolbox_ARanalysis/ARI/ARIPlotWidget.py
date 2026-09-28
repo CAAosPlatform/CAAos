@@ -3,7 +3,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from PyQt5 import QtWidgets
+from PyQt5 import QtCore, QtWidgets
 
 import pyqtgraph as pg
 from caaos.GUI.common.signalPlotWidget import signalPlot
@@ -221,3 +221,51 @@ class plotArray(pg.GraphicsLayoutWidget):
         except AttributeError:
             print('no region selected')
             return None
+
+
+class ARIindexMonitoring(pg.GraphicsLayoutWidget):
+    signal_selectionMoved = QtCore.pyqtSignal(bool)
+
+    def __init__(self):
+        super(ARIindexMonitoring, self).__init__()
+        self.resetPlot()
+
+    def resetPlot(self):
+        self.xData = np.array([0])
+        self.yData = np.array([0])
+        self.Npoints = 0
+        self.plot()
+
+    # set Data vectors
+    def setData(self, x,y):
+        self.xData = np.append(self.xData, x)
+        self.yData = np.append(self.yData, y)
+        self.Npoints = len(self.xData)
+
+
+    def plot(self):
+        self.clear()
+        self.axis = pg.PlotItem()
+
+        title = pg.TextItem(text='ARI index', anchor=(0, 0), color=pyQtConf['textColor'], angle=0)
+        title.setParentItem(self.axis)
+        title.setPos(80, 0)
+
+        # self.axis.setLabel('left', 'Heart rate','bpm')
+        self.axis.showGrid(x=True, y=True)
+        self.axis.setLabel('bottom', 'Time', 's')
+        self.axis.setMouseEnabled(x=True, y=False)  # allows pan in X direction only
+        self.axis.setLimits(xMin=0, xMax=self.xData[-1],yMin=0,yMax=10)  # limits the viewbox of the plot to xData range
+        self.axis.enableAutoRange(y=False)
+        self.signalCurve = self.axis.plot(x=self.xData, y=self.yData,
+                                          pen=pg.mkPen(pyQtConf['plotColors']['red'],
+                                                       width=pyQtConf['plotLineWidth']))
+        self.addItem(self.axis)
+
+    # replot data without creating a new curve. It changes yData only. yData must be the same size
+    def replot(self):
+        self.signalCurve.setData(x=self.xData, y=self.yData)
+        # self.update
+        self.axis.setLimits(xMin=0, xMax=self.xData[-1],yMin=0,yMax=10)  # limits the viewbox of the plot to xData range
+        self.axis.vb.setRange(xRange=(min(self.xData), max(self.xData)), update=True)
+        self.axis.vb.setRange(yRange=(0,10), update=True)

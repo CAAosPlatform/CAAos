@@ -68,6 +68,12 @@ def ampdFast(sigInput, order, LSMlimit=1):
             The 1D signal given as input to the algorithm
         order: int
             The number of windows in which sigInput is divided
+        lsmLimit: float
+            Wavelet transform limit as a ratio of full signal length.
+            Valid values: 0-1, the LSM array will no longer be calculated after this point
+              which results in the inability to find peaks at a scale larger than this factor.
+              For example a value of .5 will be unable to find peaks that are of period
+              1/2 * signal length, a default value of 1 will search all LSM sizes.
         Returns
         -------
         pks: ndarray

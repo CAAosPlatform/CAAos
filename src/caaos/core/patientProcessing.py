@@ -15,7 +15,7 @@ from scipy import signal as scipySignal
 
 from caaos.tools import tools
 from caaos.core.ARI.ARI import ARIanalysis
-from caaos.core.ARI.ARIARMA import ARIARMAanalysis
+from caaos.core.ARI.ARIARMA import ARIARMAanalysis,ARIARMAanalysisRegularized
 from caaos.core.Mx.Mx import meanFlowIdx
 from caaos.core.signals.signals import signal
 from caaos.core.TFA.PSDestimator import PSDestimator
@@ -70,7 +70,7 @@ class patientProcessing():
         self.hasMXdata_R = False
         self.historySignals = []
         self.historyOperations = []
-
+        self.currentTime = None  #this variable is not
         # operations etree nodes
         self.jobRootNode = None
         self.operationsNode = None
@@ -95,7 +95,7 @@ class patientProcessing():
          The job will start in 'preprocessing' mode.
 
         Args:
-            inputFile (str): input data file for preprocessing. formats:  .EXP .DAT .CSV .PAR
+            inputFile (str): input data file for preprocessing. formats:  .EXP .DAT .CSV .PAR .PRN
 
         Returns:
             None:
@@ -105,7 +105,7 @@ class patientProcessing():
 
         [self.dirName, self.filePrefix, extension] = tools.splitPath(self.DATAfileName)
 
-        if extension.lower() not in ['.exp', '.dat', '.csv', '.par']:
+        if extension.lower() not in ['.exp', '.dat', '.csv', '.par', '.prn']:
             print('ERROR: newJob - wrong input data file type...')
             exit()
 
@@ -115,6 +115,8 @@ class patientProcessing():
             self.DATAfileType = 'CSV'
         if extension.upper() in ['.PAR']:
             self.DATAfileType = 'PAR'
+        if extension.upper() in ['.PRN']:
+            self.DATAfileType = 'PRN'
 
         # create operationsTree
         self.jobRootNode = ETree.Element('job')
@@ -149,8 +151,8 @@ class patientProcessing():
 
         [self.dirName, self.filePrefix, extension] = tools.splitPath(self.DATAfileName)
 
-        if extension.lower() not in ['.exp', '.dat', '.csv', '.par']:
-            print('ERROR: newJob - wrong input data file type...')
+        if extension.lower() not in ['.exp', '.dat', '.csv', '.par', '.prn']:
+            print('ERROR: loadJob - wrong input data file type...')
             exit()
 
         if extension.upper() in ['.EXP', '.DAT']:
@@ -159,6 +161,8 @@ class patientProcessing():
             self.DATAfileType = 'CSV'
         if extension.upper() in ['.PAR']:
             self.DATAfileType = 'PAR'
+        if extension.upper() in ['.PRN']:
+            self.DATAfileType = 'PRN'
 
         self.setActiveModule(activeModule)
         # create operations node for new operations
@@ -166,7 +170,7 @@ class patientProcessing():
         self.loadDATA()
 
         print('importing operations...')
-        # import operationsFile if present. replaces the 'operationsFile' node with the contents of the file.
+        # import operationsFile if present. replaces the 'operationsFile' node with <operations> node of the file.
         for elem in self.jobRootNode.xpath('operationsFile'):
             pos = self.jobRootNode.index(elem)
             self.jobRootNode.remove(elem)
@@ -177,22 +181,26 @@ class patientProcessing():
 
         if self.activeModule == 'preprocessing':
             print('running preprocessing operations...')
-            for elem in self.jobRootNode.xpath('operations/preprocessing'): # there might be more than one preprocessing operations
-                self.runPreprocessingOperations(elem)
+            for operations in self.jobRootNode.xpath('operations'):
+                for elem in operations.xpath('preprocessing'): # there might be more than one preprocessing operations
+                    self.runPreprocessingOperations(elem)
 
         if self.activeModule == 'ARanalysis':
             print('running preprocessing operations...')
-            for elem in self.jobRootNode.xpath('operations/preprocessing'): # there might be more than one preprocessing operations
-                self.runPreprocessingOperations(elem)
+            for operations in self.jobRootNode.xpath('operations'):
+                for elem in operations.xpath('preprocessing'): # there might be more than one preprocessing operations
+                    self.runPreprocessingOperations(elem)
 
-            print('running AR operations...')
-            for elem in self.jobRootNode.xpath('operations/ARanalysis'): # there might be more than one ARanalys operations
-                self.runARanalysisOperations(elem)
+                print('running AR operations...')
+            for operations in self.jobRootNode.xpath('operations'):
+                for elem in operations.xpath('ARanalysis'): # there might be more than one ARanalys operations
+                    self.runARanalysisOperations(elem)
 
     def import_PPO_ARO_Operations(self, inputFile_PPO_ARO, elemPosition=None, runOperations=False):
         # imports the operations contained in inputFile_PPO_ARO file
         # if elemPosition=None: add to the end
 
+        #self._removeEmptyOperations(self.jobRootNode)
         # check for file type errors
         [dir, baseName, ext] = tools.splitPath(inputFile_PPO_ARO)
 
@@ -217,14 +225,18 @@ class patientProcessing():
         # creates new operators Node. The previous one with imported operations stays in a separate <operations> Node
         self.createNewOperation()
 
+        #tools.printET(self.jobRootNode)
         # run all operations
         if runOperations:
-            if self.activeModule == 'preprocessing':
-                for elem in self.jobRootNode.xpath('preprocessing'):
-                    self.runPreprocessingOperations(elem)
-            if self.activeModule == 'ARanalysis':
-                for elem in self.jobRootNode.xpath('ARanalysis'):
-                    self.runARanalysisOperations(elem)
+            for operations in self.jobRootNode.xpath('operations'):
+                #tools.printET(operations)
+                if self.activeModule == 'preprocessing':
+                        for elem in operations.xpath('preprocessing'): # elem is a list with separated
+                            # <elements>
+                            self.runPreprocessingOperations(elem)
+                if self.activeModule == 'ARanalysis':
+                    for elem in operations.xpath('operations/ARanalysis'):
+                        self.runARanalysisOperations(elem)
 
     def _removeEmptyOperations(self, parentElement):
         "removes recursivelly empty elements"
@@ -271,7 +283,7 @@ class patientProcessing():
         """
         Load header data from raw data files **.exp**, **.dat**.
 
-        This function is usually used in the begining to extract general information from the file. This function is automatically called from :meth:`loadData`
+        This function is usually used in the beginning to extract general information from the file. This function is automatically called from :meth:`loadData`
 
         **Header format**
 
@@ -363,6 +375,17 @@ class patientProcessing():
                 self.sizeHeader = 0
                 self.nChannels = 3
 
+            if self.DATAfileType == 'PRN':
+                data = np.loadtxt(file, usecols=[1, 2, 3, 4])
+
+                # sampling freq
+                self.samplingRate_Hz = None  # this value will be loaded in :meth:`loadData`
+                self.signalLabels = ['timeStamp','CBFVR', 'CBFVL', 'ABP', 'ETCO2','state']
+                self.signalUnits = ['none','cm/s', 'cm/s', 'cmHg', 'V','none']
+                self.sizeHeader = 0
+                self.nChannels = 5
+
+
     def loadDATA(self):
         """
         Loads patient data from raw data files **.EXP**, **.DAT**.
@@ -407,8 +430,8 @@ class patientProcessing():
             dtypes = ('U11', 'i4')  # col 0: time (11 char string)   col 1: frame (32 bit int)
             dtypes = dtypes + ('f8',) * self.nChannels  # the other columns will be treated as float (8bits)
 
-            rawData = np.genfromtxt(self.DATAfileName, delimiter=None, skip_header=self.sizeHeader, autostrip=True, names=','.join(self.signalLabels),
-                                    dtype=dtypes)
+            rawData = np.genfromtxt(self.DATAfileName, delimiter=None, skip_header=self.sizeHeader, autostrip=True,
+                                    names=','.join(self.signalLabels),usecols=range(self.nChannels+2), dtype=dtypes)
 
             # remove first two columns of array (time stamp and sample #)
             self.signalLabels = self.signalLabels[2:]
@@ -430,6 +453,43 @@ class patientProcessing():
             # col 0: time, col 1: CBFVL, col 2: APB, col 3: CBFVR
             rawData = np.genfromtxt(self.DATAfileName, delimiter=None, skip_header=self.sizeHeader, autostrip=True, names=','.join(self.signalLabels),
                                     dtype=dtypes, usecols=[1, 2, 3])
+
+        if self.DATAfileType == 'PRN':
+            # create dtype of the file
+            dtypes = ('U11',)  # col 0: time (11 char string)
+            dtypes = dtypes + ('f8',) * (self.nChannels)
+
+            rawData = np.genfromtxt(self.DATAfileName, delimiter=None, skip_header=self.sizeHeader, autostrip=True,
+                                    names=','.join(self.signalLabels), usecols=range(self.nChannels + 1), dtype=dtypes)
+
+            #find sampling frequency
+            if len(rawData['timeStamp'][0])==8:  # hh:mm:ss
+                t1=rawData['timeStamp'][0]
+                t2=rawData['timeStamp'][1]
+                t1 = datetime.strptime(t1, '%H:%M:%S')
+                t2 = datetime.strptime(t2, '%H:%M:%S')
+                deltaT=0.01
+            if len(rawData['timeStamp'][0])==10:  # hh:mm:ss:d (deciseconds)
+                t1=rawData['timeStamp'][0]+'00000'  # add 0000 to convert from centisecond to microseconds
+                t2=rawData['timeStamp'][1]+'00000'  # add 0000 to convert from centisecond to microseconds
+                t1 = datetime.strptime(t1, '%H:%M:%S:%f')
+                t2 = datetime.strptime(t2, '%H:%M:%S:%f')
+                deltaT=0.01
+            if len(rawData['timeStamp'][0])==11:  # hh:mm:ss:cc  (centiseconds)
+                t1=rawData['timeStamp'][0]+'0000'  # add 0000 to convert from centisecond to microseconds
+                t2=rawData['timeStamp'][1]+'0000'  #  add 0000 to convert from centisecond to microseconds
+                t1 = datetime.strptime(t1, '%H:%M:%S:%f')
+                t2 = datetime.strptime(t2, '%H:%M:%S:%f')
+                deltaT=(t2-t1).total_seconds()
+
+
+            self.samplingRate_Hz = 1.0/deltaT
+
+            # remove first column of array (time stamp)
+            self.signalLabels = self.signalLabels[1:]
+            self.signalUnits = self.signalUnits[1:]
+            names = list(rawData.dtype.names)[1:]
+            rawData = rawData[names]
 
         for i in range(self.nChannels):
             label = self.signalLabels[i]
@@ -756,16 +816,16 @@ class patientProcessing():
                 label = tools.getElemValueXpath(operation, xpath='label', valType='str')
                 unit = tools.getElemValueXpath(operation, xpath='unit', valType='str')
                 print('Setting channel=%d: label=%s, type=%s, unit=%s' % (channel, label, typeSignal, unit))
-                if typeSignal == 'None':
-                    typeSignal = None
+                # if typeSignal == 'None':
+                #     typeSignal = None
                 self.setSignalInfo(channel, label, unit, typeSignal, register=False)
 
             if operation.tag == 'setType':
                 typeSignal = tools.getElemValueXpath(operation, xpath='type', valType='str')
                 channel = tools.getElemValueXpath(operation, xpath='channel', valType='int')
                 print('Setting Type channel=%d: %s' % (channel, typeSignal))
-                if typeSignal == 'None':
-                    typeSignal = None
+                # if typeSignal == 'None':
+                #     typeSignal = None
                 self.setSignalInfo(channel, sigType=typeSignal, register=False)
 
             if operation.tag == 'setLabel':
@@ -936,8 +996,8 @@ class patientProcessing():
                 print('TFAsaveStat: remNegPhase=%s coheTreshold=%s fileName=%s  plotFileFormat=%s' % (
                     str(remNegPhase), str(coheTreshold), fileName, plotFileFormat))
 
-                if plotFileFormat.lower() == 'none':
-                    plotFileFormat = None
+                # if plotFileFormat.lower() == 'none':
+                #     plotFileFormat = None
 
                 self.saveTFAstatistics(self.dirName + fileName, plotFileFormat, coheTreshold, remNegPhase, register=False)
 
@@ -951,8 +1011,8 @@ class patientProcessing():
                 format = tools.getElemValueXpath(operation, xpath='format', valType='str')
                 print('ARIsave: format=%s fileName=%s' % (format, fileName))
 
-                if plotFileFormat.lower() == 'none':
-                    plotFileFormat = None
+                # if plotFileFormat.lower() == 'none':
+                #     plotFileFormat = None
 
                 self.saveARI(self.dirName + fileName, plotFileFormat, format, register=False)
 
@@ -969,8 +1029,8 @@ class patientProcessing():
                 format = tools.getElemValueXpath(operation, xpath='format', valType='str')
                 print('ARIARMAsave: format=%s fileName=%s' % (format, fileName))
 
-                if plotFileFormat.lower() == 'none':
-                    plotFileFormat = None
+                # if plotFileFormat.lower() == 'none':
+                #     plotFileFormat = None
 
                 self.saveARIARMA(self.dirName + fileName, plotFileFormat, format, register=False)
 
@@ -988,8 +1048,8 @@ class patientProcessing():
                 format = tools.getElemValueXpath(operation, xpath='format', valType='str')
                 print('MXsave: format=%s fileName=%s' % (format, fileName))
 
-                if plotFileFormat.lower() == 'none':
-                    plotFileFormat = None
+                # if plotFileFormat.lower() == 'none':
+                #     plotFileFormat = None
 
                 self.saveMX(self.dirName + fileName, plotFileFormat, format, register=False)
 
@@ -1394,7 +1454,7 @@ class patientProcessing():
             self.PPoperationsNode.append(xmlElement)
 
     # filterType: valid values: 'triangular', 'rect', None (no filter)
-    def computePSDwelch(self, useB2B=True, overlap=0.5, segmentLength_s=100, windowType='hanning', detrend=False, filterType=None, nTapsFilter=3,
+    def computePSDwelch(self, useB2B=True, overlap=0.5, segmentLength_s=100, windowType='hann', detrend=False, filterType=None, nTapsFilter=3,
                         register=True):
         # find ABP and CBFV channels
         ABP_channel = None
@@ -1421,10 +1481,10 @@ class patientProcessing():
 
             self.PSD_L = PSDestimator(inputSignal, outputSignal, Fs, overlap, segmentLength_s, windowType, detrend, self.signals[ABP_channel].unit,
                                       self.signals[CBFv_L_channel].unit)
-            self.PSD_L.computeWelch()
-            self.hasPSDdata_L = True
+            FlagOut = self.PSD_L.computeWelch()
+            self.hasPSDdata_L = FlagOut
 
-            if filterType is not None:
+            if filterType is not None and self.hasPSDdata_L:
                 self.PSD_L.filterAll(filterType, nTapsFilter, keepFirst=True)
         else:
             self.hasPSDdata_L = False
@@ -1442,10 +1502,10 @@ class patientProcessing():
 
             self.PSD_R = PSDestimator(inputSignal, outputSignal, Fs, overlap, segmentLength_s, windowType, detrend, self.signals[ABP_channel].unit,
                                       self.signals[CBFv_R_channel].unit)
-            self.PSD_R.computeWelch()
-            self.hasPSDdata_R = True
+            FlagOut = self.PSD_R.computeWelch()
+            self.hasPSDdata_R = FlagOut
 
-            if filterType is not None:
+            if filterType is not None and self.hasPSDdata_R:
                 self.PSD_R.filterAll(filterType, nTapsFilter, keepFirst=True)
         else:
             self.hasPSDdata_R = False
@@ -1797,8 +1857,21 @@ class patientProcessing():
 
         print('Ok!')
 
-    def computeARIARMA(self, useB2B=True, orderP=2, orderQ=2, register=True):
+    def computeARIARMA(self, useB2B=True, orderP=2, orderQ=2, startTime_s=None, endTime_s=None,register=True):
+        """
+        computes ARI index using ARX model
 
+        Args:
+            useB2B (bool):
+            orderP (int): Autoregresive order (output)
+            orderQ (int): exogenous order (input)
+            startTime_s (): Time of the starting point in seconds. If None starts from 0 (default: None)
+            endTime_s (): Time of the end point in seconds. If None starts from the end of the series (default: None)
+            register (bool):
+
+        Returns:
+            None:
+        """
         # find ABP and CBFV channels
         ABP_channel = None
         CBFv_R_channel = None
@@ -1822,6 +1895,18 @@ class patientProcessing():
                 outputSignal = self.signals[CBFv_L_channel].data
                 Fs = self.signals[ABP_channel].samplingRate_Hz
 
+            # crop signal if needed
+            if startTime_s is not None:
+                startIdx = int(startTime_s * Fs)
+            else:
+                startIdx = 0
+            if endTime_s is not None:
+                endIdx = int(endTime_s * Fs)
+            else:
+                endIdx = len(inputSignal)
+            inputSignal = inputSignal[startIdx:endIdx]
+            outputSignal = outputSignal[startIdx:endIdx]
+
             self.ARIARMA_L = ARIARMAanalysis(inputSignal, outputSignal, Fs, orderP, orderQ, self.signals[ABP_channel].unit,
                                              self.signals[CBFv_L_channel].unit)
 
@@ -1841,8 +1926,132 @@ class patientProcessing():
                 outputSignal = self.signals[CBFv_R_channel].data
                 Fs = self.signals[ABP_channel].samplingRate_Hz
 
+            # crop signal if needed
+            if startTime_s is not None:
+                startIdx = int(startTime_s * Fs)
+            else:
+                startIdx = 0
+            if endTime_s is not None:
+                endIdx = int(endTime_s * Fs)
+            else:
+                endIdx = len(inputSignal)
+            inputSignal = inputSignal[startIdx:endIdx]
+            outputSignal = outputSignal[startIdx:endIdx]
+
             self.ARIARMA_R = ARIARMAanalysis(inputSignal, outputSignal, Fs, orderP, orderQ, self.signals[ABP_channel].unit,
                                              self.signals[CBFv_R_channel].unit)
+
+            self.hasARIARMAdata_R = True
+
+        else:
+            self.hasARIARMAdata_R = False
+
+        if register:
+            xmlElement = ETree.Element('ARIARMA')
+            tools.ETaddElement(parent=xmlElement, tag='useB2B', text=str(useB2B))
+            tools.ETaddElement(parent=xmlElement, tag='p', text=str(orderP))
+            tools.ETaddElement(parent=xmlElement, tag='q', text=str(orderQ))
+            self.ARoperationsNode.append(xmlElement)
+
+    def computeARIARMAregularized(self, useB2B=True, orderP=2, orderQ=2, startTime_s=None, endTime_s=None,
+                                  register=True):
+        """
+        computes ARI index using ARX model
+
+        Args:
+            useB2B (bool):
+            orderP (int): Autoregresive order (output)
+            orderQ (int): exogenous order (input)
+            startTime_s (): Time of the starting point in seconds. If None starts from 0 (default: None)
+            endTime_s (): Time of the end point in seconds. If None starts from the end of the series (default: None)
+            register (bool):
+
+        Returns:
+            None:
+        """
+        # find ABP and CBFV channels
+        ABP_channel = None
+        CBFv_R_channel = None
+        CBFv_L_channel = None
+        for s in self.signals:
+            if s.sigType == 'ABP':
+                ABP_channel = s.channel
+            if s.sigType == 'CBFV_R':
+                CBFv_R_channel = s.channel
+            if s.sigType == 'CBFV_L':
+                CBFv_L_channel = s.channel
+
+        # left side
+        if (ABP_channel is not None) and (CBFv_L_channel is not None):
+            if useB2B:
+                inputSignal = self.signals[ABP_channel].beat2beatData.avg
+                outputSignal = self.signals[CBFv_L_channel].beat2beatData.avg
+                Fs = self.signals[ABP_channel].beat2beatData.samplingRate_Hz
+            else:
+                inputSignal = self.signals[ABP_channel].data
+                outputSignal = self.signals[CBFv_L_channel].data
+                Fs = self.signals[ABP_channel].samplingRate_Hz
+
+            # crop signal if needed
+            if startTime_s is not None:
+                startIdx = int(startTime_s * Fs)
+            else:
+                startIdx = 0
+            if endTime_s is not None:
+                endIdx = int(endTime_s * Fs)
+            else:
+                endIdx = len(inputSignal)
+            inputSignal = inputSignal[startIdx:endIdx]
+            outputSignal = outputSignal[startIdx:endIdx]
+
+            regParam=1000
+            if self.hasARIARMAdata_L:
+                previousEstimate = self.ARIARMA_L.coefsRaw
+                self.ARIARMA_L = ARIARMAanalysisRegularized(inputSignal, outputSignal, Fs, orderP, orderQ,
+                                                            self.signals[ABP_channel].unit,
+                                                            self.signals[CBFv_L_channel].unit,regParam=regParam,
+                                                            referenceLTIvec=previousEstimate)
+            else:
+                self.ARIARMA_L = ARIARMAanalysis(inputSignal, outputSignal, Fs, orderP, orderQ, self.signals[ABP_channel].unit,
+                                                 self.signals[CBFv_L_channel].unit)
+
+            self.hasARIARMAdata_L = True
+
+        else:
+            self.hasARIARMAdata_L = False
+
+        # right channel
+        if (ABP_channel is not None) and (CBFv_R_channel is not None):
+            if useB2B:
+                inputSignal = self.signals[ABP_channel].beat2beatData.avg
+                outputSignal = self.signals[CBFv_R_channel].beat2beatData.avg
+                Fs = self.signals[ABP_channel].beat2beatData.samplingRate_Hz
+            else:
+                inputSignal = self.signals[ABP_channel].data
+                outputSignal = self.signals[CBFv_R_channel].data
+                Fs = self.signals[ABP_channel].samplingRate_Hz
+
+            # crop signal if needed
+            if startTime_s is not None:
+                startIdx = int(startTime_s * Fs)
+            else:
+                startIdx = 0
+            if endTime_s is not None:
+                endIdx = int(endTime_s * Fs)
+            else:
+                endIdx = len(inputSignal)
+            inputSignal = inputSignal[startIdx:endIdx]
+            outputSignal = outputSignal[startIdx:endIdx]
+
+            if self.hasARIARMAdata_R:
+                previousEstimate = self.ARIARMA_R.coefsRaw
+                self.ARIARMA_R = ARIARMAanalysisRegularized(inputSignal, outputSignal, Fs, orderP, orderQ,
+                                                            self.signals[ABP_channel].unit,
+                                                            self.signals[CBFv_R_channel].unit,regParam=regParam,
+                                                            referenceLTIvec=previousEstimate)
+            else:
+                self.ARIARMA_R = ARIARMAanalysis(inputSignal, outputSignal, Fs, orderP, orderQ, self.signals[ABP_channel].unit,
+                                                 self.signals[CBFv_R_channel].unit)
 
             self.hasARIARMAdata_R = True
 

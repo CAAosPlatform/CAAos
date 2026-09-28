@@ -2,6 +2,7 @@
 
 # -*- coding: utf-8 -*-
 import numpy as np
+import math
 from lxml import etree as ETree
 from scipy import interpolate as scipyInterpolate
 from scipy import signal as scipySignal
@@ -9,33 +10,6 @@ from scipy import signal as scipySignal
 from caaos.tools import ampdLib
 from caaos.core.signals import signals_b2b
 from caaos.tools import tools
-
-class signal_poit_by_point(signal):
-    """
-    This class defines a signal object that is processed point by point. It inherits from the signal class.
-    The signal object contains the signal data and its properties.
-    It also contains methods to process the signal data and a beat2beat object to store the beat-to-beat signals.
-    """
-    def __init__(self, channel, label, unit, dataMaxLength, samplingRate_Hz, operationsXML):
-        """
-        This function initializes a signal object. The signal object contains the signal data and its properties.
-
-        Args:
-            channel (int): number of the channel.
-            label (str): lable of the plots
-            unit (str): unit of the signal
-            dataMaxLength(int): maximum length of the signal data
-            samplingRate_Hz (float): sampling rate in Hz
-            operationsXML (lxml.etree._Element): XML element to store the operations performed on the signal
-        """
-        self.allData=np.zeros(dataMaxLength)
-        self.latestDataIndex = -1  # index of the latest written data point
-
-        #slice data to be passed to the parent class
-        data= self.allData[:self.latestDataIndex]  # initialize with empty data
-
-        super().__init__(channel, label, unit, data, samplingRate_Hz, operationsXML)
-
 
 class signal():
     """
@@ -78,7 +52,7 @@ class signal():
 
     def getTimeVector(self, t0=0.0):
         """
-        Returns a vector with the time values of thesignal samples.
+        Returns a vector with the time values of the samples.
 
         Args:
             t0 (float): initial time in seconds. Default is 0.0 s.
@@ -200,85 +174,6 @@ class signal():
                 tools.ETaddElement(parent=xmlElement, tag='type', text=sigType)
             self.registerOperation(xmlElement)
 
-    # def setLabel(self, newLabel, register=True):
-    #     """ this function is deprecated. Use setInfo instead"""
-    #     self.label = newLabel
-    #
-    #     # register operation
-    #     if register:
-    #         xmlElement = ETree.Element('setLabel')
-    #         tools.ETaddElement(parent=xmlElement, tag='label', text=newLabel)
-    #         self.registerOperation(xmlElement)
-    #
-    # def setUnit(self, newUnit, register=True):
-    #     """ this function is deprecated. Use setInfo instead"""
-    #     self.unit = newUnit
-    #
-    #     # register operation
-    #     if register:
-    #         xmlElement = ETree.Element('setUnit')
-    #         tools.ETaddElement(parent=xmlElement, tag='unit', text=newUnit)
-    #         self.registerOperation(xmlElement)
-    #
-    # def setType(self, newType, register=True):
-    #     """ this function is deprecated. Use setInfo instead"""
-    #     self.sigType = newType
-    #
-    #     # register operation
-    #     if register:
-    #         xmlElement = ETree.Element('setType')
-    #         tools.ETaddElement(parent=xmlElement, tag='type', text=newType)
-    #         self.registerOperation(xmlElement)
-    #
-    # def findPeaksBySegments(self, segmentLengh_s=20.0):
-    #     """ this function is deprecated. Use findPeaks instead"""
-    #
-    #     segmentLength = segmentLengh_s * self.samplingRate_Hz  # equivalent to 20seconds of data
-    #     nSegments = int(self.nPoints / segmentLength)
-    #     fmax_bpm = 200
-    #     DeltaTMin = int(60.0 / float(fmax_bpm) * self.samplingRate_Hz)  # number of samples that represents a frequency of 220bpm
-    #
-    #     dataSegments = np.array_split(self.data, nSegments)
-    #
-    #     peakIdx = np.array([], dtype=int)
-    #     valleyIdx = np.array([], dtype=int)
-    #
-    #     idxStart = 0
-    #     for s in range(len(dataSegments)):
-    #         data = dataSegments[s]
-    #         sMax = np.percentile(data, 90.0)
-    #         smph = np.percentile(data, 60.0)
-    #         sMin = np.percentile(data, 10.0)
-    #         prominence = (sMax - sMin) * 0.1
-    #
-    #         peakIdxSegment = tools.detect_peaks(data, mph=smph, mpd=DeltaTMin, threshold=0, edge='rising', kpsh=False, MinPeakProminence=prominence,
-    #                                             MinPeakProminenceSide='left', valley=False)
-    #
-    #         valleyIdxSegment = []
-    #         for i in peakIdxSegment:
-    #             cumulativeProminence = 0
-    #             idx = i
-    #             dx = data[idx] - data[idx - 1]
-    #             while idx >= 0 and (dx > 0 or cumulativeProminence < (sMax - sMin) * 0.5):
-    #                 cumulativeProminence += dx
-    #                 idx -= 1
-    #                 dx = data[idx] - data[idx - 1]
-    #
-    #             if idx >= 0:
-    #                 valleyIdxSegment.append(idx)
-    #
-    #         valleyIdxSegment = np.array(valleyIdxSegment)
-    #         # print(valleyIdxSegment)
-    #         peakIdx = np.append(peakIdx, peakIdxSegment + idxStart, axis=None)
-    #         valleyIdx = np.append(valleyIdx, valleyIdxSegment + idxStart, axis=None)
-    #         idxStart += data.shape[0]
-    #
-    #     # print(peakIdx)
-    #     peakVal = self.data[peakIdx]
-    #     valleyVal = self.data[valleyIdx]
-    #
-    #     return [peakIdx, peakVal, valleyIdx, valleyVal]
-
     def findPeaks(self, method='ampd', findPeaks=True, findValleys=False, register=False):
         """
         Find peaks and/or valleys in the signal data.
@@ -316,15 +211,21 @@ class signal():
                     temp.append(max(peakIdx[i], peakIdx[i + 1]))  # otherwise adopt the largest index between these two peak candidates
             return temp
 
+        # find appropriate number of segments.
+        # from experience usually each segment is about 30s.
+        segmentLength_s=30.0
+        dataLength_s=self.nPoints/self.samplingRate_Hz
+
+        order = math.ceil(dataLength_s/segmentLength_s)
         if method.lower() == 'ampd':
             if findPeaks:
 
-                peakIdx = ampdLib.ampdFast(self.data, 10, LSMlimit=0.2)
+                peakIdx = ampdLib.ampdFast(self.data, order, LSMlimit=0.2)
                 # remove peaks that are too close to each other
                 peakIdx = removeNearbyPeaks(peakIdx, fmax_bpm = 250) # 250 bmp max
 
             if findValleys:
-                valleyIdx = ampdLib.ampdFast(-self.data, 10, LSMlimit=0.1)
+                valleyIdx = ampdLib.ampdFast(-self.data, order, LSMlimit=0.1)
                 # remove peaks that are too close to each other
                 valleyIdx = removeNearbyPeaks(valleyIdx, fmax_bpm = 250) # 250 bmp max
 
@@ -433,9 +334,14 @@ class signal():
         """
 
         if valMax <= valMin:
+            print('ERROR: calibrate. valMax cannot be smaller than valMin. Continuing without calibration')
             return
         # print(segmentIndexes)
         [x1, x2] = self.yLimits(method=method, detrend=False, segmentIndexes=segmentIndexes)
+
+        if x1 == x2:
+            print('ERROR: calibrate. input signal is constant. Continuing without calibration')
+            return
 
         y2 = valMax
         y1 = valMin
@@ -666,3 +572,32 @@ class signal():
                     #crop in intervals for saving
                     beatInvervalVals = self.data[beat_idx[i]:beat_idx[i + 1]]
                     np.savetxt(f,beatInvervalVals.reshape(1, beatInvervalVals.shape[0]),delimiter=';')
+
+
+
+class signal_poit_by_point(signal):
+    """
+    This class defines a signal object that is processed point by point. It inherits from the signal class.
+    The signal object contains the signal data and its properties.
+    It also contains methods to process the signal data and a beat2beat object to store the beat-to-beat signals.
+    """
+    def __init__(self, channel, label, unit, dataMaxLength, samplingRate_Hz, operationsXML):
+        """
+        This function initializes a signal object. The signal object contains the signal data and its properties.
+
+        Args:
+            channel (int): number of the channel.
+            label (str): lable of the plots
+            unit (str): unit of the signal
+            dataMaxLength(int): maximum length of the signal data
+            samplingRate_Hz (float): sampling rate in Hz
+            operationsXML (lxml.etree._Element): XML element to store the operations performed on the signal
+        """
+        self.allData=np.zeros(dataMaxLength)
+        self.latestDataIndex = -1  # index of the latest written data point
+
+        #slice data to be passed to the parent class
+        data= self.allData[:self.latestDataIndex]  # initialize with empty data
+
+        super().__init__(channel, label, unit, data, samplingRate_Hz, operationsXML)
+

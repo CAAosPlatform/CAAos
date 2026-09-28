@@ -96,3 +96,15 @@ class beat2beat():
         self.nPoints = self.xData.shape[0]
 
         self.samplingRate_Hz = float(resampleRate_Hz)
+
+    def getTimeVector(self, t0=0.0):
+        """
+        Returns a vector with the time values of the samples.
+
+        Args:
+            t0 (float): initial time in seconds. Default is 0.0 s.
+
+        Returns:
+            numpy.ndarray: vector with time values in seconds.
+        """
+        return t0 + np.arange(self.nPoints) / self.samplingRate_Hz

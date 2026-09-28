@@ -461,12 +461,12 @@ def convStr(string,  # type: str
 
     """
 
+    if string == 'None':
+        return None
+
     if outputType not in ['int', 'float', 'str', 'bool', 'list_int', 'list_float']:
         print('Error: outputType -> %s <- not recognized. Valid options: int, float, str, bool, list_int, list_float' % outputType)
         exit(-1)
-
-    if string == 'None':
-        return None
 
     if outputType == 'int':
         return int(string)
@@ -563,7 +563,7 @@ def timed_wait(total_seconds, update_interval=1):
     for remaining_time in range(total_seconds, 0, -update_interval):
         print(f"\rTime remaining: {remaining_time} seconds", end='')
         time.sleep(update_interval)
-    print("Wait complete!")
+    print("\nWaiting time completed!")
 
 def getCurrentTime():
     """

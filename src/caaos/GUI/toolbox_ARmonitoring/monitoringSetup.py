@@ -17,10 +17,12 @@ class monitoringSetupWidget(QtWidgets.QMainWindow):
     signal_updateInterval = QtCore.pyqtSignal()
     signal_totalTime = QtCore.pyqtSignal()
     signal_simulatePatient = QtCore.pyqtSignal()
+    signal_boardMockup = QtCore.pyqtSignal()
     signal_simulatePatientPath = QtCore.pyqtSignal()
+    signal_FIFOlength = QtCore.pyqtSignal()
 
     def __init__(self, parent=None, samplingRate_Hz=100.0, patientName='Patient Name', birthdate='31:01:1900', updateInterval_s=5.0,
-                 totalTime_s=10*60, simulatePatientPath=None):
+                 totalTime_s=10*60, FIFO_lengh_s=30.0, simulatePatientPath=None):
         super().__init__(parent)
 
         self.samplingRate_Hz = samplingRate_Hz
@@ -29,6 +31,10 @@ class monitoringSetupWidget(QtWidgets.QMainWindow):
         self.updateInterval_s = updateInterval_s
         self.totalTime_s = totalTime_s
         self.simulatePatientPath = simulatePatientPath
+        # operation flags
+        self.simulatePatient = False
+        self.boardMockup = False
+        self.FIFOlength_s = FIFO_lengh_s
         self.initUI()
 
     def initUI(self):
@@ -49,33 +55,71 @@ class monitoringSetupWidget(QtWidgets.QMainWindow):
         formLayout = QtWidgets.QFormLayout()
         vbox.addLayout(formLayout)
 
-        # simulate patient
-        default = False
-        self.simulatePatient = default
-        simulatePatient = QtWidgets.QCheckBox('', self)
-        simulatePatient.setChecked(self.simulatePatient)
-        simulatePatient.stateChanged.connect(lambda: self.registerOptions('simulatePatient'))
-        formLayout.addRow('Simulate patient', simulatePatient)
+        # operation mode: normal / simulate patient / mockup board
+        # Use radio buttons so exactly one mode is selected
+        self.mode = 'normal'  # one of: 'normal', 'simulate', 'mockup'
+        modeGroupBox = QtWidgets.QGroupBox('Operation mode')
+        modeLayout = QtWidgets.QVBoxLayout()
 
-        # simulate patient path
+        self.normalModeRadio = QtWidgets.QRadioButton('Normal')
+        self.simulatePatientRadio = QtWidgets.QRadioButton('Simulate patient: uses the board and simulates data acquisition using a pre-recorded file.')
+        self.mockupBoardRadio = QtWidgets.QRadioButton('Mockup board: does not use the board and simulates data acquisition using a pre-recorded file.')
+        self.normalModeRadio.setChecked(True)
+        self.normalModeRadio.toggled.connect(lambda: self.registerOptions('mode'))
+        self.simulatePatientRadio.toggled.connect(lambda: self.registerOptions('mode'))
+        self.mockupBoardRadio.toggled.connect(lambda: self.registerOptions('mode'))
+
+        modeLayout.addWidget(self.normalModeRadio)
+        modeLayout.addWidget(self.simulatePatientRadio)
+        modeLayout.addWidget(self.mockupBoardRadio)
+        modeGroupBox.setLayout(modeLayout)
+        formLayout.addRow(modeGroupBox)
+
+        # simulate patient / mockup path input (enabled only for simulate or mockup modes)
         self.simulatePatientPathWidget = QtWidgets.QLineEdit()
-        self.simulatePatientPathWidget.setText(self.simulatePatientPath)
-        self.simulatePatientPathWidget.setFixedWidth(190)
+        # populate only if a default path was provided
+        if self.simulatePatientPath is not None:
+            self.simulatePatientPathWidget.setText(self.simulatePatientPath)
+        else:
+            self.simulatePatientPathWidget.setText('')
+        self.simulatePatientPathWidget.setFixedWidth(250)
         self.simulatePatientPathWidget.editingFinished.connect(lambda: self.registerOptions('simulatePatientPath'))
         self.simulatePatientPathWidget.returnPressed.connect(lambda: self.registerOptions('simulatePatientPath'))
-        self.simulatePatientPathWidget.setEnabled(True)
-        formLayout.addRow('Simulate patient path', self.simulatePatientPathWidget)
+        # enabled only when simulate or mockup is selected
+        self.simulatePatientPathWidget.setEnabled(False)
 
+        self.browseFileButton = QtWidgets.QPushButton('Browse...')
+        self.browseFileButton.setFixedWidth(80)
+        # enabled only when simulate or mockup is selected
+        self.browseFileButton.setEnabled(False)
+
+        # connect the browse button to a class method (avoid inner functions)
+        self.browseFileButton.clicked.connect(lambda: self.registerOptions('choosePatientPath'))
+
+        fileContainer = QtWidgets.QWidget()
+        fileHBox = QtWidgets.QHBoxLayout()
+        fileHBox.setContentsMargins(0, 0, 0, 0)
+        # align children to the left inside the container
+        fileHBox.setAlignment(QtCore.Qt.AlignLeft)
+        fileHBox.addWidget(self.simulatePatientPathWidget)
+        fileHBox.addWidget(self.browseFileButton)
+        fileContainer.setLayout(fileHBox)
+        # Prevent the container from expanding to fill the form's field space
+        fileContainer.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
+
+        formLayout.addRow('Simulate patient path', fileContainer)
+        # Align the container to the left within the QFormLayout row
+        formLayout.setAlignment(fileContainer, QtCore.Qt.AlignLeft)
 
         # sampling rate (Hz)
-        samplingRateWidget = QtWidgets.QDoubleSpinBox()
-        samplingRateWidget.setRange(50, 1000)
-        samplingRateWidget.setDecimals(0)
-        samplingRateWidget.setSingleStep(50)
-        samplingRateWidget.setFixedWidth(130)
-        samplingRateWidget.setValue(self.samplingRate_Hz)
-        samplingRateWidget.valueChanged.connect(lambda: self.registerOptions('samplingRate'))
-        formLayout.addRow('Sampling rate (Hz)', samplingRateWidget)
+        self.samplingRateWidget = QtWidgets.QDoubleSpinBox()
+        self.samplingRateWidget.setRange(50, 1000)
+        self.samplingRateWidget.setDecimals(0)
+        self.samplingRateWidget.setSingleStep(50)
+        self.samplingRateWidget.setFixedWidth(130)
+        self.samplingRateWidget.setValue(self.samplingRate_Hz)
+        self.samplingRateWidget.valueChanged.connect(lambda: self.registerOptions('samplingRate'))
+        formLayout.addRow('Sampling rate (Hz)', self.samplingRateWidget)
 
         # patient name
         patientNameWidget = QtWidgets.QLineEdit()
@@ -97,7 +141,7 @@ class monitoringSetupWidget(QtWidgets.QMainWindow):
 
         # update interval (s)
         samplingRateWidget = QtWidgets.QDoubleSpinBox()
-        samplingRateWidget.setRange(1, 60)
+        samplingRateWidget.setRange(1, 600)
         samplingRateWidget.setDecimals(2)
         samplingRateWidget.setSingleStep(1)
         samplingRateWidget.setFixedWidth(130)
@@ -114,6 +158,17 @@ class monitoringSetupWidget(QtWidgets.QMainWindow):
         totalTimeWidget.setValue(self.totalTime_s/60)  # convert to minutes for display
         totalTimeWidget.valueChanged.connect(lambda: self.registerOptions('totalTime_s'))
         formLayout.addRow('Total Acquisition time (min)', totalTimeWidget)
+
+        # FIFO register duration (s)
+        FIFOlengthWidget = QtWidgets.QDoubleSpinBox()
+        FIFOlengthWidget.setRange(1, 60)
+        FIFOlengthWidget.setDecimals(0)
+        FIFOlengthWidget.setSingleStep(1)
+        FIFOlengthWidget.setFixedWidth(130)
+        FIFOlengthWidget.setValue(int(self.FIFOlength_s))  # convert to minutes for display
+        FIFOlengthWidget.valueChanged.connect(lambda: self.registerOptions('FIFOlength_s'))
+        formLayout.addRow('FIFO register length (s)', FIFOlengthWidget)
+
         # Add a submit button
         startButtonWidget = QtWidgets.QPushButton('Start monitoring')
         startButtonWidget.setFixedWidth(100)
@@ -144,18 +199,48 @@ class monitoringSetupWidget(QtWidgets.QMainWindow):
         if type == 'totalTime_s':
             self.totalTime_s = self.sender().value()*60  # convert to seconds
             self.signal_totalTime.emit()
-        if type == 'simulatePatient':
-            self.simulatePatient = self.sender().isChecked()
-            if self.simulatePatient:
-                self.simulatePatientPathWidget.setEnabled(True)
-            else:
+
+        if type == 'FIFOlength_s':
+            self.FIFOlength_s = self.sender().value()
+            self.signal_FIFOlength.emit()
+
+        if type == 'mode':
+            # Determine which radio is selected and update flags
+            if self.normalModeRadio.isChecked():
+                self.mode = 'normal'
+                self.simulatePatient = False
+                self.boardMockup = False
                 self.simulatePatientPathWidget.setEnabled(False)
-            self.signal_simulatePatient.emit()
+                self.browseFileButton.setEnabled(False)
+                self.samplingRateWidget.setEnabled(True)
+            elif self.simulatePatientRadio.isChecked():
+                self.mode = 'simulate'
+                self.simulatePatient = True
+                self.boardMockup = False
+                self.simulatePatientPathWidget.setEnabled(True)
+                self.browseFileButton.setEnabled(True)
+                self.samplingRateWidget.setEnabled(False)
+                self.signal_simulatePatient.emit()
+            elif self.mockupBoardRadio.isChecked():
+                self.mode = 'mockup'
+                self.boardMockup = True
+                self.simulatePatient = False
+                self.simulatePatientPathWidget.setEnabled(True)
+                self.browseFileButton.setEnabled(True)
+                self.samplingRateWidget.setEnabled(False)
+                self.signal_boardMockup.emit()
+
+        if type =='choosePatientPath':
+            # only allow .EXP files
+            path, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Select simulate patient file', '',
+                                                            'EXP files (*.EXP *.exp)')
+            self.simulatePatientPathWidget.setText(path)
+            self.simulatePatientPath = path
+            self.signal_simulatePatientPath.emit()
+
         if type == 'simulatePatientPath':
             self.simulatePatientPath = self.sender().text()
             self.signal_simulatePatientPath.emit()
-
-
 
     def startMonitoring(self):
         self.signal_startMonitoring.emit()

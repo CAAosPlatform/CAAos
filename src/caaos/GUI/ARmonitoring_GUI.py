@@ -2,12 +2,16 @@
 
 # -*- coding: utf-8 -*-
 
-import os
 import time
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 from caaos.core.patientMonitoring import patientMonitoring
+from caaos.GUI.toolbox_ARanalysis.ARI import ARIWidget
+from caaos.GUI.toolbox_ARanalysis.ARIARMA import ARIARMAWidget
+from caaos.GUI.toolbox_ARanalysis.Mx import MxWidget
+from caaos.GUI.toolbox_ARanalysis.TFA import powerSpectrumWidget
+from caaos.GUI.toolbox_ARanalysis.TFA import TFAWidget
 from caaos.GUI.toolbox_ARmonitoring.monitoringSetup import monitoringSetupWidget
 from caaos.GUI.toolbox_Preprocessing.artefactRemoval import artefactRemovalWidget
 from caaos.GUI.toolbox_Preprocessing.beat2beat import signalBeat2beatWidget
@@ -15,15 +19,7 @@ from caaos.GUI.toolbox_Preprocessing.resampleCalibrate import resampleCalibrateW
 from caaos.GUI.toolbox_Preprocessing.RRmarks import signalRRmarksWidget
 from caaos.GUI.toolbox_Preprocessing.signalProps import signalPropsWidget
 from caaos.GUI.toolbox_Preprocessing.syncFilter import signalSyncFilterWidget
-
-from caaos.GUI.toolbox_ARanalysis.ARI import ARIWidget
-from caaos.GUI.toolbox_ARanalysis.ARIARMA import ARIARMAWidget
-from caaos.GUI.toolbox_ARanalysis.TFA import powerSpectrumWidget
-from caaos.GUI.toolbox_ARanalysis.TFA import TFAWidget
-from caaos.GUI.toolbox_ARanalysis.Mx import MxWidget
-
 from caaos.tools import tools
-
 
 
 class ARmonitoring_GUI(QtWidgets.QWidget):
@@ -78,21 +74,30 @@ class ARmonitoring_GUI(QtWidgets.QWidget):
         self.monitoringSamplingRate_Hz = 100.0
         self.patientName = 'Patient Name'
         self.birthdate = '31:01:1900'
-        self.signalUpdateInterval_s = 2.0
+        self.signalUpdateInterval_s = 10.0
         self.totalTime_s = 10 * 60.0  # 10 minutes
         self.simulatePatient = False
+        self.boardMockup = False
         self.simulatePatientPath = '../../data/CG24HG.EXP'
+        self.simulatePatientPath = '../../DadosRicardoNogueira/monitoring_2025_11Nov_11_-_11_49_37_01_basal.EXP'
+        self.simulatePatientPath = '../../DadosRicardoNogueira/monitoring_2025_10Oct_21_-_14_09_24_02_hipercapnia.EXP'
+        # length of the FIFO bufffer. this is the length of the data used for the calculations
+        self.FIFOlength_s = 30.0
 
-        self.monitoringSetup = monitoringSetupWidget(self, samplingRate_Hz=self.monitoringSamplingRate_Hz, patientName=self.patientName,
-                                                     birthdate=self.birthdate, updateInterval_s = self.signalUpdateInterval_s,
-                                                     totalTime_s=self.totalTime_s,simulatePatientPath = self.simulatePatientPath)
+        self.monitoringSetup = monitoringSetupWidget(self, samplingRate_Hz=self.monitoringSamplingRate_Hz,
+                                                     patientName=self.patientName, birthdate=self.birthdate,
+                                                     updateInterval_s=self.signalUpdateInterval_s,
+                                                     totalTime_s=self.totalTime_s, FIFO_lengh_s=self.FIFOlength_s,
+                                                     simulatePatientPath=self.simulatePatientPath)
         self.monitoringSetup.signal_simulatePatient.connect(lambda: self.registerOptions('simulatePatient'))
+        self.monitoringSetup.signal_boardMockup.connect(lambda: self.registerOptions('boardMockup'))
         self.monitoringSetup.signal_simulatePatientPath.connect(lambda: self.registerOptions('simulatePatientPath'))
         self.monitoringSetup.signal_patientName.connect(lambda: self.registerOptions('patientName'))
         self.monitoringSetup.signal_birthDate.connect(lambda: self.registerOptions('birthdate'))
         self.monitoringSetup.signal_samplingRate.connect(lambda: self.registerOptions('sampingRate'))
         self.monitoringSetup.signal_updateInterval.connect(lambda: self.registerOptions('updateInterval'))
         self.monitoringSetup.signal_updateInterval.connect(lambda: self.registerOptions('totalTime'))
+        self.monitoringSetup.signal_FIFOlength.connect(lambda: self.registerOptions('FIFOlength'))
         self.monitoringSetup.signal_startMonitoring.connect(self.startMonitoring)
 
         self.closeJobAct.setEnabled(True)
@@ -109,7 +114,6 @@ class ARmonitoring_GUI(QtWidgets.QWidget):
 
         self.parent().setWindowTitle(self.parent().name)
 
-
         self.monitoringSamplingRate_Hz = 100.0
         self.patientName = 'Patient Name'
         self.birthdate = '31:01:1900'
@@ -123,24 +127,23 @@ class ARmonitoring_GUI(QtWidgets.QWidget):
 
     def registerOptions(self, type):
         if type == 'sampingRate':
-            self.monitoringSamplingRate_Hz = self.sender().samplingRate_Hz
-            #print(self.monitoringSamplingRate_Hz)
+            self.monitoringSamplingRate_Hz = self.sender().samplingRate_Hz  # print(self.monitoringSamplingRate_Hz)
         if type == 'patientName':
-            self.patientName = self.sender().patientName
-            #print(self.patientName)
+            self.patientName = self.sender().patientName  # print(self.patientName)
         if type == 'birthdate':
-            self.birthdate = self.sender().birthdate
-            #print(self.birthdate)
+            self.birthdate = self.sender().birthdate  # print(self.birthdate)
         if type == 'updateInterval':
-            self.signalUpdateInterval_s = self.sender().updateInterval_s
-            #print(self.signalUpdateInterval_s)
+            self.signalUpdateInterval_s = self.sender().updateInterval_s  # print(self.signalUpdateInterval_s)
         if type == 'totalTime':
-            self.totalTime_s = self.sender().totalTime_s
-            #print(self.totalTime_s)
+            self.totalTime_s = self.sender().totalTime_s  # print(self.totalTime_s)
         if type == 'simulatePatient':
             self.simulatePatient = self.sender().simulatePatient
+        if type == 'boardMockup':
+            self.boardMockup = self.sender().boardMockup
         if type == 'simulatePatientPath':
             self.simulatePatientPath = self.sender().simulatePatientPath
+        if type == 'FIFOlength':
+            self.FIFOlength_s = self.sender().FIFOlength_s
 
     def startMonitoring(self):
 
@@ -153,11 +156,11 @@ class ARmonitoring_GUI(QtWidgets.QWidget):
             self.fileName, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Select output data file', '',
                                                                      'All (.exp .dat .csv .PAR) (*.EXP *.exp *.DAT *.dat *.csv *.CSV *.PAR *.par)')
         else:
-            #output file
+            # output file
             print('LOAD de arquivo abreviado! ver ARmonitoring_GUI.py, linha 146')
 
-            self.fileName = '/home/fernando/servidor/programas/00_UFABC/ProjetoPosDocAngela/data/monitoring_%s_%s.EXP' % (tools.getCurrentTime(),
-                                                                                                                          self.patientName)
+            self.fileName = ('/home/fernando/servidor/programas/00_UFABC/ProjetoPosDocAngela/data/monitoring_temp_%s_%s'
+                             '.EXP') % (tools.getCurrentTime(), self.patientName)
 
         if not self.fileName:
             return
@@ -165,22 +168,41 @@ class ARmonitoring_GUI(QtWidgets.QWidget):
         # the ARO and PPO files are loaded inside this function
         self.data.newJob(outputFile=self.fileName)
 
-        if self.simulatePatient:
-            print('simulating patient: %s' % self.simulatePatientPath)
-            self.data.startAcquisitionSimulationMode(self.simulatePatientPath, totalTime_sec=self.totalTime_s,
-                                                     samplingRate_Hz=self.monitoringSamplingRate_Hz,
-                                                     patientName=self.patientName, birthDate=self.birthdate)
+        if self.boardMockup:
+            print('board mockup: %s' % self.simulatePatientPath)
+            self.data.startAcquisition(totalTime_sec=self.totalTime_s, samplingRate_Hz=self.monitoringSamplingRate_Hz,
+                                       initialBufferTime_sec=0, patientName=self.patientName, birthDate=self.birthdate,
+                                       mockupAcquisition=True ,mockupInputEXPfile = self.simulatePatientPath)
         else:
-            self.data.startAcquisition(totalTime_sec=self.totalTime_s, samplingRate_Hz=self.monitoringSamplingRate_Hz, patientName=self.patientName,
-                                       birthDate=self.birthdate)
+            if self.simulatePatient:
+                print('simulating patient: %s' % self.simulatePatientPath)
+                self.data.startAcquisitionSimulationMode(self.simulatePatientPath, totalTime_sec=self.totalTime_s,
+                                                         samplingRate_Hz=self.monitoringSamplingRate_Hz,
+                                                         patientName=self.patientName, birthDate=self.birthdate)
+            else:
+                self.data.startAcquisition(totalTime_sec=self.totalTime_s,
+                                           samplingRate_Hz=self.monitoringSamplingRate_Hz, initialBufferTime_sec=0,
+                                           patientName=self.patientName, birthDate=self.birthdate,
+                                           mockupAcquisition=False)
 
         # wait 110 seconds to allow the acquisition to start and the first data to be collected this is needed to avoid problems
         # with the first signal update, which is called in the next line, specially for ARI.
-        tools.timed_wait(30, update_interval=5)
+        #tools.timed_wait(30, update_interval=5)
 
-        self.data.initSignalUpdateTimer(interval_sec=self.signalUpdateInterval_s, updateAllData=True ,applyOperations=True,saveToFile=True)
 
-        time.sleep(self.signalUpdateInterval_s+0.5) # wait one extra second to allow the first update to complete before updating the GUI
+        if False:
+            time.sleep(15)
+            self.data.updateSignals(applyOperations=True, saveToFile=True)
+
+            time.sleep(15)
+            self.data.updateSignals(applyOperations=True, saveToFile=True)
+        else:
+            # set update signal update timer. This will update the signal display every interval_sec seconds and save new data to file if saveToFile=True
+            self.data.initSignalUpdateTimer(interval_sec=self.signalUpdateInterval_s, FIFOlength_s=self.FIFOlength_s,
+                                            applyOperations=True, saveToFile=True)
+
+        time.sleep(
+          self.signalUpdateInterval_s + 0.5)  # wait one extra second to allow the first update to complete before updating the GUI
         self.createTabs()
 
         self.update_timer = QtCore.QTimer()
@@ -208,8 +230,8 @@ class ARmonitoring_GUI(QtWidgets.QWidget):
         # signal Props
         self.signalProps = signalPropsWidget(self.data)
         self.tabWidget.addTab(self.signalProps, 'Labels/Types')
-        #self.signalProps.setEnabled(False)
-        #self.signalProps.updateTab()  # this update is needed since this tab is on the top at the begining
+        # self.signalProps.setEnabled(False)
+        # self.signalProps.updateTab()  # this update is needed since this tab is on the top at the begining
 
         # resample
         self.resample = resampleCalibrateWidget(self.data)
@@ -231,25 +253,27 @@ class ARmonitoring_GUI(QtWidgets.QWidget):
         self.beat2beat = signalBeat2beatWidget(self.data)
         self.tabWidget.addTab(self.beat2beat, 'Beat to beat')
 
-        # Power spectra estimation
-        self.PSD = powerSpectrumWidget.powerSpectrumWidget(self.data)
-        self.tabWidget.addTab(self.PSD, 'Power spectra density (PSD)')
-        #self.PSD.updateTab()  # this update is needed because this tab is on the top at the begining
-
-        # TFA
-        self.TFA = TFAWidget.TFAWidget(self.data)
-        self.tabWidget.addTab(self.TFA, 'Transfer function analysis (TFA)')
-
-        # ARI
-        self.ARI = ARIWidget.ARIWidget(self.data)
-        self.tabWidget.addTab(self.ARI, 'Autoregulation index analysis (ARI)')
+        if False:
+            # Power spectra estimation
+            self.PSD = powerSpectrumWidget.powerSpectrumWidget(self.data)
+            self.tabWidget.addTab(self.PSD, 'Power spectra density (PSD)')
+            # self.PSD.updateTab()  # this update is needed because this tab is on the top at the begining
 
         if False:
+            # TFA
+            self.TFA = TFAWidget.TFAWidget(self.data)
+            self.tabWidget.addTab(self.TFA, 'Transfer function analysis (TFA)')
 
-            # ARI ARMA
-            self.ARIARMA = ARIARMAWidget.ARIARMAWidget(self.data)
-            self.tabWidget.addTab(self.ARIARMA, 'Autoregulation index analysis ARMA (ARI ARMA)')
+        if False:
+            # ARI
+            self.ARI = ARIWidget.ARIWidget(self.data)
+            self.tabWidget.addTab(self.ARI, 'Autoregulation index analysis (ARI)')
 
+        # ARI ARMA
+        self.ARIARMA = ARIARMAWidget.ARIARMAWidget(self.data)
+        self.tabWidget.addTab(self.ARIARMA, 'Autoregulation index analysis ARMA (ARI ARMA)')
+
+        if False:
             # Mx
             self.MX = MxWidget.MxWidget(self.data)
             self.tabWidget.addTab(self.MX, 'Mean Flow Index (nMx)')
@@ -275,13 +299,14 @@ class ARmonitoring_GUI(QtWidgets.QWidget):
             self.RRdetection.updateTab()
         if current == 5:
             self.beat2beat.updateTab()
+        if False:
+            if current == 6:
+                self.PSD.updateTab()
+            if current == 7:
+                self.TFA.updateTab()
+            if current == 8:
+                self.ARI.updateTab()
         if current == 6:
-            self.PSD.updateTab()
-        if current == 7:
-            self.TFA.updateTab()
-        if current == 8:
-            self.ARI.updateTab()
-        if current == 9:
             self.ARIARMA.updateTab()
         if current == 10:
             self.MX.updateTab()

@@ -17,8 +17,8 @@ CBFv_L = data[:, 1]
 CBFv_R = data[:, 3]
 samplingFrequency_Hz = 1 / (data[1, 0] - data[0, 0])
 
-p = 3
-q = 3
+p = 1  # output
+q = 5  # input
 
 myARIARMA = ARIARMA.ARIARMAanalysis(ABP, CBFv_L, samplingFrequency_Hz, p, q)
 
@@ -27,7 +27,9 @@ fig, ax = plt.subplots()
 line1, = ax.plot(myARIARMA.timeVals, myARIARMA.stepResponse, label='stepResponse')
 
 line2, = ax.plot(myARIARMA.timeVals, myARIARMA.ABPstep, label='Pressure')
+line3, = ax.plot(myARIARMA.timeVals, myARIARMA.ARIbestFit, label='ARIbestFit: %f' % myARIARMA.ARI_frac)
 
+plt.legend()
 plt.show()
 
 print('done!')

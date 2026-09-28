@@ -18,8 +18,6 @@ This class is not intended to be used in production code.
 It is a mockup and does not implement any real functionality.
 """
 
-inputEXPfile = '/home/fernando/servidor/programas/00_UFABC/ProjetoPosDocAngela/data/CG24HG.EXP'
-
 class DataAcquisitionSimulator:
     def __init__(self, samplingRate_Hz=100.0,nSamplesMax=1000):
         """
@@ -30,7 +28,6 @@ class DataAcquisitionSimulator:
         self.running = False
         self.nSamplesMax = nSamplesMax  # Maximum number of samples to simulate
         self.thread = None
-
     def start(self):
         """Start the data acquisition in a separate thread."""
         if not self.running:
@@ -49,8 +46,8 @@ class DataAcquisitionSimulator:
         """Simulate data acquisition by adding one to the sampling counter"""
         while self.running:
             self.currentSample += 1
-            if self.currentSample % 100==0:
-                print(f'Simulated sample {self.currentSample}')
+            #if self.currentSample % 100==0:
+            #    print(f'Simulated sample {self.currentSample}')
             time.sleep(self.interval)
             if self.currentSample == self.nSamplesMax:  # Simulate a finite number of samples
                 print('Reached maximum number of samples, stopping acquisition.')
@@ -59,14 +56,16 @@ class DataAcquisitionSimulator:
 class MCC1808_analogIn():
     def __init__(self, daqDevice):
         self.daqDevice = daqDevice
+        self.device = self.getDevice()
         self.simulator = None
+
     def getDevice(self):
         print('getting analog in device... (mockup version)')
-        return None
+        return 'mockup'
 
-    def __displayScanOptions(self, bit_mask):
+    def __displayScanOptions(self, bit_mask=None):
         """Create a displays string for all scan options."""
-        print('getting analog in device... (mockup version)')
+        print('Scan options... (mockup version)')
         return None
 
     def confChannelQueue(self, channelConfList=[{'channel': 0, 'inputMode': 'SE', 'range': 'BIP10VOLTS'}], sampleRate=100, nSamplesPerChannel=1000):
@@ -80,7 +79,7 @@ class MCC1808_analogIn():
         self.simulator = DataAcquisitionSimulator(self.sampleRate, nSamplesMax=self.nSamplesPerChannel)
 
         # load data from EXP file
-        self.dataArrayNP,_ = self.loadDataFrom_EXP(inputEXPfile, channels=[0, 1, 2, 3])
+        self.dataArrayNP,_ = self.loadDataFrom_EXP(self.inputEXPfile, channels=[0, 1, 2, 3])
         self.dataArrayNP = self.dataArrayNP[:,:self.nSamplesPerChannel]
 
         print('---- Analog input channel queue configuration ----')
@@ -138,11 +137,6 @@ class MCC1808_analogIn():
         return signals[channels, :], samplingRate_Hz
 
     def readData(self, flagWait=False):
-        # Start the acquisition.
-        #
-        # When using the queue, the low_channel, high_channel, input_mode, and
-        # range parameters are ignored since they are specified in queue_array.
-
         self.simulator.start()
 
     def getstatus(self):
@@ -166,7 +160,7 @@ class MCC1808_analogIn():
         current_total_count = self.simulator.currentSample * self.nChannels
         current_scan_count = self.simulator.currentSample
 
-        if True:
+        if False:
             print('Collected samples (all channels) = ', current_total_count)
             print('Collected samples per channel = ', current_scan_count)
             print('current Buffer Idx = ', current_index, '\n')
@@ -179,27 +173,36 @@ class MCC1808_analogIn():
 
 class MCC1808_analogOut():
     def __init__(self, daqDevice):
-        return
+        self.daqDevice = daqDevice
+        self.device = self.getDevice()
 
     def getDevice(self):
         print('getting analog out device... (mockup version)')
-        return None
+        return 'mockup'
 
-    def __displayScanOptions(self, bit_mask):
+    def __displayScanOptions(self, bit_mask=None):
         """Create a displays string for all scan options."""
-        print('getting analog in device... (mockup version)')
+        print('Scan options... (mockup version)')
         return None
 
-    def confChannelScan(self, signals=np.array([0, 1, 2]), sampleRate=100, continuous=False, zeroEnd=True):
+    def confChannelScan(self, signals=None, sampleRate=None, continuous=False, zeroEnd=True):
+        self.signals = signals
+        self.sampleRate = sampleRate
+        self.scanOptions = None
+        self.nChannels = 0
+        self.nSamplesPerChannel = 0
         return None
 
     def writeData(self, flagWait=False):
+        print('AO device data write -  (mockup version)')
         return
 
-    def loadDataFrom_EXP(self, fileName, channels=[0, 1]):
+    def loadDataFrom_EXP(self, fileName=None, channels=[0, 1]):
+        print('loadDataFrom_EXP -  (mockup version)')
         return None, None
 
     def normalizeData(self, data, maxV=10.0):
+        print('normalizeData -  (mockup version)')
         return None
 
     def zeroOutput(self):
@@ -209,7 +212,11 @@ class MCC1808_analogOut():
         return None
 
     def getstatus(self):
-        return None
+        status=0  # iddle
+        current_index=0 # The index into the data buffer immediately following the last sample transferred.
+        current_total_count=0  # The total number of samples transferred since the scan started.
+        current_scan_count=0  #The number of samples per channel transferred since the scan started.
+        return status, current_scan_count, current_index, current_total_count
 
 class MCC1808():
     def __init__(self):
@@ -231,3 +238,6 @@ class MCC1808():
         print('disconnecting DAQ device... (mockup version)')
         self.AiDevice.stopRead()
         print('Done!')
+
+    def setInputEXPfile(self, inputFile):
+        self.AiDevice.inputEXPfile = inputFile

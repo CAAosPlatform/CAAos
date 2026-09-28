@@ -53,7 +53,8 @@ else:
     gain = np.array(datax[:, 5])
     phase = np.array(datax[:, 8])
 
-    # Duplicates input. Panerai's code stores only the first half of the spectrum. Since Nyquist is lost. I am copying the pevious value as Nyquist
+    # Duplicates input. Panerai's code stores only the first half of the spectrum. Since Nyquist is lost. I am
+    # copying the previous value as Nyquist
     gain = np.concatenate([gain, np.array([gain[-1]]), np.flip(gain[1:])])
     phase = np.concatenate([phase, np.array([phase[-1]]), -np.flip(phase[1:])])
 

@@ -267,14 +267,21 @@ class TFAWidget(QtWidgets.QWidget):
         plotArea.setLimits(xlim=[ARsetup.freqRangeDic['VLF'][0], ARsetup.freqRangeDic['HF'][1]],
                            ylim=[[gainMin, gainMax], [phasMin * 180 / np.pi, phasMax * 180 / np.pi], [coheMin, coheMax]])
 
-        # draw avg Lines
-        avg = [TFAdata.getGainStatistics(freqRange=r, coheTreshold=self.coheTreshold)[0] for r in ['VLF', 'LF', 'HF']]
-        plotArea.markAvgRanges(plotNbr=0, avgValues=avg)
-        avg = [TFAdata.getPhaseStatistics(freqRange=r, coheTreshold=False, remNegPhase=self.removeNegPhase)[0] * 180 / np.pi for r in
-               ['VLF', 'LF', 'HF']]
-        plotArea.markAvgRanges(plotNbr=1, avgValues=avg)
-        avg = [TFAdata.getCoherenceStatistics(freqRange=r)[0] for r in ['VLF', 'LF', 'HF']]
-        plotArea.markAvgRanges(plotNbr=2, avgValues=avg)
+        # draw avg Lines]
+        if True:
+            avg = [TFAdata.getGainStatistics(freqRange=r, coheTreshold=self.coheTreshold)[0] for r in ['VLF', 'LF', 'HF']]
+            plotArea.markAvgRanges(plotNbr=0, avgValues=avg)
+            avg = [TFAdata.getPhaseStatistics(freqRange=r, coheTreshold=False, remNegPhase=self.removeNegPhase)[0] * 180 / np.pi for r in
+                   ['VLF', 'LF', 'HF']]
+            plotArea.markAvgRanges(plotNbr=1, avgValues=avg)
+            avg = [TFAdata.getCoherenceStatistics(freqRange=r)[0] for r in ['VLF', 'LF', 'HF']]
+            plotArea.markAvgRanges(plotNbr=2, avgValues=avg)
+        else:
+            print('DEBUG: commenting TFAwidget. line 271 to remove average lines in the plot')
+            print('DEBUG: commenting TFAwidget. line 271 to remove average lines in the plot')
+            print('DEBUG: commenting TFAwidget. line 271 to remove average lines in the plot')
+            print('DEBUG: commenting TFAwidget. line 271 to remove average lines in the plot')
+
 
 
 class TFAresultTable(QtWidgets.QWidget):

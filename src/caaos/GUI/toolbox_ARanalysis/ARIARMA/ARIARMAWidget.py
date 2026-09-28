@@ -5,8 +5,11 @@
 import numpy as np
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+from caaos.core.patientMonitoring import patientMonitoring
+
 from caaos.GUI.toolbox_ARanalysis.ARIARMA import ARIARMAPlotWidget
-from ARIWidget import ARIresultTable
+from caaos.GUI.toolbox_ARanalysis.ARI import ARIPlotWidget
+from caaos.GUI.toolbox_ARanalysis.ARI.ARIWidget import ARIresultTable
 from caaos.GUI.conf.GUIsetup import pyQtConf
 
 plotFileFormatDict = {0: ('png', 'PNG'), 1: ('jpg', 'JPG'), 2: ('tif', 'TIF'), 3: ('pdf', 'PDF'), 4: ('svg', 'SVG'), 5: ('eps', 'EPS'),
@@ -89,7 +92,7 @@ class ARIARMAWidget(QtWidgets.QWidget):
 
         # Save button
         self.saveButton = QtWidgets.QPushButton('Save\nARI ARMA\ndata')
-        self.saveButton.setFixedWidth(130)
+        self.saveButton.setFixedWidth(100)
         self.saveButton.setEnabled(False)
         self.saveButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
         self.saveButton.setStyleSheet('background-color:rgb(192,255,208)')  # light green
@@ -110,6 +113,9 @@ class ARIARMAWidget(QtWidgets.QWidget):
         vboxL.addWidget(text)
         vboxL.addWidget(self.resultTableLWidget)
         vboxL.addWidget(self.plotAreaL)
+        if isinstance(self.data, patientMonitoring):
+            self.plotARImonitoringL =ARIPlotWidget.ARIindexMonitoring()
+            vboxL.addWidget(self.plotARImonitoringL)
 
         self.plotAreaR = ARIARMAPlotWidget.plotArray(self.data, side='R', nCols=1)
         vboxR = QtWidgets.QVBoxLayout()
@@ -119,6 +125,9 @@ class ARIARMAWidget(QtWidgets.QWidget):
         vboxR.addWidget(text)
         vboxR.addWidget(self.resultTableRWidget)
         vboxR.addWidget(self.plotAreaR)
+        if isinstance(self.data, patientMonitoring):
+            self.plotARImonitoringR = ARIPlotWidget.ARIindexMonitoring()
+            vboxR.addWidget(self.plotARImonitoringR)
 
         # layout
         hboxPlot = QtWidgets.QHBoxLayout()
@@ -141,11 +150,15 @@ class ARIARMAWidget(QtWidgets.QWidget):
         # left side
         if self.data.hasARIARMAdata_L:
             self.plotData(side='L')
+            if isinstance(self.data, patientMonitoring):
+                self.plotARImonitoring(side='L')
             self.fillTableResults(side='L')
 
         # right side
         if self.data.hasARIARMAdata_R:
             self.plotData(side='R')
+            if isinstance(self.data, patientMonitoring):
+                self.plotARImonitoring(side='R')
             self.fillTableResults(side='R')
 
     def registerOptions(self, typeOpt):
@@ -234,3 +247,14 @@ class ARIARMAWidget(QtWidgets.QWidget):
         maxTiek = np.amax(ARIARMA_data.ARIbestFit)
         minTiek = np.amin(ARIARMA_data.ARIbestFit)
         plotArea.setLimits(xlim=[0, ARIARMA_data.timeVals[-1]], ylim=[[min(minImp, minTiek), max(maxImp, maxTiek)]])
+
+    def plotARImonitoring(self, side='L'):
+        if side.upper() == 'L':
+            plotArea = self.plotARImonitoringL
+            ARIARMA_data = self.data.ARIARMA_L
+        if side.upper() == 'R':
+            plotArea = self.plotARImonitoringR
+            ARIARMA_data = self.data.ARIARMA_L
+
+        plotArea.setData(self.data.currentTime, ARIARMA_data.ARI_frac)
+        plotArea.replot()
