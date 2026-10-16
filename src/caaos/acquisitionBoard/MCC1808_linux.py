@@ -237,7 +237,6 @@ class MCC1808_analogOut():
                     self.signals = np.hstack((self.signals, np.zeros((self.nChannels, 1))))
                 self.nSamplesPerChannel += 1
 
-
         except RuntimeError as error:
             print('\n', error)
 
@@ -326,7 +325,7 @@ class MCC1808_analogOut():
 
     def zeroOutput(self):
         for ch in range(self.nChannels):
-            self.actualRate = self.device.a_out(channel=0, analog_range=self.range, flags=self.flags, data=0.0)
+            self.actualRate = self.device.a_out(channel=ch, analog_range=self.range, flags=self.flags, data=0.0)
 
     def stopWrite(self):
         self.device.scan_stop()
