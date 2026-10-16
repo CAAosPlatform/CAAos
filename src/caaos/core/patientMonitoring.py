@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime, timedelta
-
+import sys
 import numpy as np
 from lxml import etree as ETree
 from datetime import datetime
@@ -108,7 +108,10 @@ class patientMonitoring(patientProcessing):
             print('WARNING: Using mockup acquisition board!')
             from caaos.acquisitionBoard.MCC1808_mockup import MCC1808
         else:
-            from caaos.acquisitionBoard.MCC1808 import MCC1808
+            if sys.platform.startswith('win'):
+                from caaos.acquisitionBoard.MCC1808_windows_old import MCC1808
+            elif sys.platform.startswith('linux'):
+                from caaos.acquisitionBoard.MCC1808_linux import MCC1808
 
         # start collecting data
         self.myDAQ = MCC1808()
@@ -174,7 +177,10 @@ class patientMonitoring(patientProcessing):
 
         tools.ETaddElement(self.jobRootNode.xpath('data'), 'samplingRate_Hz', text=str(self.samplingRate_Hz))
 
-        from caaos.acquisitionBoard.MCC1808 import MCC1808
+        if sys.platform.startswith('win'):
+            from caaos.acquisitionBoard.MCC1808_windows_old import MCC1808
+        elif sys.platform.startswith('linux'):
+            from caaos.acquisitionBoard.MCC1808_linux import MCC1808
 
         # start collecting data
         self.myDAQ = MCC1808()
@@ -535,7 +541,7 @@ class patientMonitoring(patientProcessing):
     def saveAcquisitionHeader(self, patientName='', birthDate='1:1:0001'):
         # create EXP header file
         self.examDate = datetime.now()
-        examDateStr = self.examDate.strftime("%d:%-m:%Y %H:%M:%S")  #: Examination Date.
+        examDateStr = self.examDate.strftime("%d:%m:%Y %H:%M:%S")  #: Examination Date.
 
         self.header = ["Patient Name:%s" % patientName, "birthday:%s" % birthDate, "Examination:%s" % examDateStr,
                        "Sampling Rate: %dHz" % self.samplingRate_Hz,

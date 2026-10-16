@@ -4,7 +4,7 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-from MxPlotWidget import plotArray
+from caaos.GUI.toolbox_ARanalysis.Mx import MxPlotWidget
 
 plotFileFormatDict = {0: ('png', 'PNG'), 1: ('jpg', 'JPG'), 2: ('tif', 'TIF'), 3: ('pdf', 'PDF'), 4: ('svg', 'SVG'), 5: ('eps', 'EPS'),
                       6: ('ps', 'PS'), 7: ('none', 'None')}
@@ -99,7 +99,7 @@ class MxWidget(QtWidgets.QWidget):
         hbox.addStretch(1)
 
         # plot area
-        self.plotAreaL = plotArray(self.data, side='L', nCols=1)
+        self.plotAreaL = MxPlotWidget.plotArray(self.data, side='L', nCols=1)
         vboxL = QtWidgets.QVBoxLayout()
         text = QtWidgets.QLabel('Left')
         text.setAlignment(QtCore.Qt.AlignCenter)
@@ -108,7 +108,7 @@ class MxWidget(QtWidgets.QWidget):
         vboxL.addWidget(self.resultTableLWidget)
         vboxL.addWidget(self.plotAreaL)
         #
-        self.plotAreaR = plotArray(self.data, side='R', nCols=1)
+        self.plotAreaR = MxPlotWidget.plotArray(self.data, side='R', nCols=1)
         vboxR = QtWidgets.QVBoxLayout()
         text = QtWidgets.QLabel('Right')
         text.setAlignment(QtCore.Qt.AlignCenter)

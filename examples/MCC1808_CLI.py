@@ -40,7 +40,12 @@ if acquisitionMode.lower() in ['normal', 'mockup']:
 if acquisitionMode.lower() == 'mockup':
     from caaos.acquisitionBoard.MCC1808_mockup import MCC1808
 else:
-    from caaos.acquisitionBoard.MCC1808 import MCC1808
+    if sys.platform.startswith('win'):
+        from caaos.acquisitionBoard.MCC1808_windows import MCC1808
+    elif sys.platform.startswith('linux'):
+        from caaos.acquisitionBoard.MCC1808_linux import MCC1808
+
+
 
 if acquisitionMode.lower() == 'signal_generator':
     from caaos.acquisitionBoard.signalGenerator import signalGenerator
@@ -48,7 +53,7 @@ if acquisitionMode.lower() == 'signal_generator':
 myDAQ = MCC1808()
 
 if acquisitionMode.lower() == 'mockup':
-    inputEXPfile = '/home/fernando/servidor/programas/00_UFABC/ProjetoPosDocAngela/data/CG24HG.EXP'
+    inputEXPfile = '../../CAAosData/data/CG24HG.EXP'
     myDAQ.setInputEXPfile(inputEXPfile)
 
 # ------------------------------------------

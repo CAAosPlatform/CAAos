@@ -3,9 +3,14 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
-
+import sys
 import numpy as np
-import uldaq
+
+if sys.platform.startswith('win'):
+    from mcculw import ul as uldaq
+elif sys.platform.startswith('linux'):
+    import uldaq
+
 import threading
 import time
 import random
