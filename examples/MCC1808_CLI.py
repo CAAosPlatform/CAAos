@@ -41,7 +41,7 @@ if acquisitionMode.lower() == 'mockup':
     from caaos.acquisitionBoard.MCC1808_mockup import MCC1808
 else:
     if sys.platform.startswith('win'):
-        from caaos.acquisitionBoard.MCC1808_windows import MCC1808
+        from caaos.acquisitionBoard.MCC1808_windows_x import MCC1808
     elif sys.platform.startswith('linux'):
         from caaos.acquisitionBoard.MCC1808_linux import MCC1808
 

@@ -51,7 +51,7 @@ class _DaqDevice():
     def get_ao_device(self):
         return self if DaqDeviceInfo(self.boardNum).supports_analog_output else None
 
-    def connect(self, connection_code=0):
+    def connect(self):
         # In mcculw the connection is established when the device is created
         self.connected = True
 
@@ -404,23 +404,20 @@ class MCC1808_analogOut():
 
 
 class MCC1808():
-    boardNum = 0
-
     def __init__(self):
+        self.boardNum = 0
         self.DAQdevice = self.getDevice()
         self.AiDevice = MCC1808_analogIn(self.DAQdevice)
         self.AoDevice = MCC1808_analogOut(self.DAQdevice)
 
-        self.connect()
-
     def getDevice(self):
         # Get the DAQ device object and verify that it is valid.
-        try:
-            # Devices are created at runtime instead of using the InstaCal configuration
-            uldaq.ignore_instacal()
+        interface_type = InterfaceType.ANY
 
+        try:
             # Get descriptors for all of the available DAQ devices.
-            devices = uldaq.get_daq_device_inventory(InterfaceType.ANY)
+            uldaq.ignore_instacal()
+            devices = uldaq.get_daq_device_inventory(interface_type)
             number_of_devices = len(devices)
             if number_of_devices == 0:
                 raise RuntimeError('Error: No DAQ devices found')
@@ -439,34 +436,14 @@ class MCC1808():
 
             # Create the DAQ device from the descriptor at the specified index.
             uldaq.create_daq_device(self.boardNum, devices[descriptor_index])
-            daqDevice = _DaqDevice(self.boardNum, devices[descriptor_index])
-            print(daqDevice.descriptor.product_name)
+            #daqDevice = _DaqDevice(self.boardNum, devices[descriptor_index])
+            #print(daqDevice.descriptor.product_name)
 
         except (RuntimeError, uldaq.ULError) as error:
             print('\n', error)
             exit()
 
-        return daqDevice
-
-    def connect(self):
-        # Establish a connection to the DAQ device.
-        try:
-            self.descriptor = self.DAQdevice.get_descriptor()
-            print('\nConnecting to', self.descriptor.dev_string, '- please wait...')
-            self.DAQdevice.connect(connection_code=0)
-
-            if self.AiDevice.device is not None:
-                print("Analog in device: " + str(DaqDeviceInfo(self.boardNum).get_ai_info().num_chans) + " channels")
-            else:
-                print("Analog in device: None")
-
-            if self.AoDevice.device is not None:
-                print("Analog out device: " + str(DaqDeviceInfo(self.boardNum).get_ao_info().num_chans) + " channels")
-            else:
-                print("Analog out device: None")
-
-        except (RuntimeError, uldaq.ULError) as error:
-            print('\n', error)
+        return DaqDeviceInfo(self.boardNum)
 
     def disconnect(self):
 
