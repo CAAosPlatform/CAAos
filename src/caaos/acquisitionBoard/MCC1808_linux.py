@@ -15,6 +15,7 @@ class MCC1808_analogIn():
     def __init__(self, daqDevice):
         self.daqDevice = daqDevice
         self.device = self.getDevice()
+        self.nChannels = -1
 
         self.scanOptions = uldaq.ScanOption.DEFAULTIO
         self.flags = uldaq.AInScanFlag.DEFAULT  # User data should be in scaled format (usually volts).
@@ -104,7 +105,7 @@ class MCC1808_analogIn():
             except RuntimeError as error:
                 print('\n', error)
 
-        # Load configuration queuehas_pacer
+        # Load configuration queue
         self.device.a_in_load_queue(configQueueList)
 
         # create buffer array
@@ -167,6 +168,7 @@ class MCC1808_analogOut():
     def __init__(self, daqDevice):
         self.daqDevice = daqDevice
         self.device = self.getDevice()
+        self.nChannels = -1
 
         self.flags = uldaq.AOutScanFlag.DEFAULT  # User data should be in scaled format (usually volts).
 
@@ -331,7 +333,6 @@ class MCC1808_analogOut():
         self.device.scan_stop()
 
     def getstatus(self):
-        status, transferStatus = self.device.get_scan_status()
         """
         Status:
            status==0 Idle
@@ -342,6 +343,8 @@ class MCC1808_analogOut():
             current_total_count: The total number of samples transferred since the scan started.
             current_scan_count: The number of samples per channel transferred since the scan started.
         """
+
+        status, transferStatus = self.device.get_scan_status()
         if False:
             print('Collected samples (all channels) = ', transferStatus.current_total_count)
             print('Collected samples per channel = ', transferStatus.current_scan_count)

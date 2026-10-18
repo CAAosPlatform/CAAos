@@ -20,12 +20,6 @@ from mcculw.enums import AnalogInputMode, FunctionType, InterfaceType, ScanOptio
 from caaos.tools import tools
 
 
-_AI_RANGES = {'BIP10VOLTS': ULRange.BIP10VOLTS,
-              'BIP5VOLTS': ULRange.BIP5VOLTS,
-              'UNI10VOLTS': ULRange.UNI10VOLTS,
-              'UNI5VOLTS': ULRange.UNI5VOLTS}
-
-
 def _displayScanOptions(bit_mask):
     """Create a displays string for all scan options."""
     options = [option.name for option in ScanOptions if option and (option & bit_mask) == option]
@@ -61,9 +55,6 @@ class _DaqDevice():
     def disconnect(self):
         self.connected = False
 
-    def release(self):
-        uldaq.release_daq_device(self.boardNum)
-
 
 class MCC1808_analogIn():
     def __init__(self, daqDevice):
@@ -73,6 +64,7 @@ class MCC1808_analogIn():
         # scaled data (volts), acquisition runs in background
         self.scanOptions = ScanOptions.BACKGROUND | ScanOptions.SCALEDATA
         self.memHandle = None
+        self.nChannels = -1
 
     def getDevice(self):
         # Get the Analog In device object and verify that it is valid.
@@ -91,12 +83,13 @@ class MCC1808_analogIn():
     def __displayScanOptions(self, bit_mask):
         return _displayScanOptions(bit_mask)
 
-    def __freeBuffer(self):
+    def freeBuffer(self):
         if self.memHandle:
             uldaq.win_buf_free(self.memHandle)
             self.memHandle = None
 
-    def confChannelQueue(self, channelConfList=[{'channel': 0, 'inputMode': 'SE', 'range': 'BIP10VOLTS'}], sampleRate=100, nSamplesPerChannel=1000):
+    def confChannelQueue(self, channelConfList=[{'channel': 0, 'inputMode': 'SE', 'range': 'BIP10VOLTS'}],
+                         sampleRate=100, nSamplesPerChannel=1000):
         """
         Configures the Analog Input Channel queue list
         Parameters
@@ -116,63 +109,65 @@ class MCC1808_analogIn():
         sampleRate: sampling rate in Hz (200k maximum
         nSamplesPerChannel: number of samples per channel
         """
-        boardNum = self.device.boardNum
-        AiInfo = DaqDeviceInfo(boardNum).get_ai_info()
+        AiInfo = DaqDeviceInfo(self.device.boardNum).get_ai_info()
         self.channelConf = channelConfList
         self.sampleRate = sampleRate
         self.nSamplesPerChannel = nSamplesPerChannel
         self.nChannels = len(channelConfList)
 
-        chanList = []
-        gainList = []
+        self.chanList = []
+        self.gainList = []
 
         for chConf in self.channelConf:
             try:
                 # Input Mode
                 if chConf['inputMode'].upper() == 'SE':
-                    inputMode = AnalogInputMode.SINGLE_ENDED
-                    validChannelMax = AiInfo.num_chans
-                elif chConf['inputMode'].upper() == 'DIFF':
-                    inputMode = AnalogInputMode.DIFFERENTIAL
-                    validChannelMax = AiInfo.num_chans // 2
-                else:
-                    raise RuntimeError('Error: Invalid input mode %s' % chConf['inputMode'])
+                    uldaq.a_chan_input_mode(self.device.boardNum, chConf['channel'], AnalogInputMode.SINGLE_ENDED)
+                if chConf['inputMode'].upper() == 'DIFF':
+                    uldaq.a_chan_input_mode(self.device.boardNum, chConf['channel'], AnalogInputMode.DIFFERENTIAL)
 
                 # channel number
+                if chConf['inputMode'].upper() == 'SE':
+                    validChannelMax = AiInfo.num_chans
+                if chConf['inputMode'].upper() == 'DIFF':
+                    validChannelMax = AiInfo.num_chans // 2
                 if chConf['channel'] > validChannelMax - 1:
                     raise RuntimeError(
-                      'Error: The DAQ device does not support channel %d input. Maximum is %d ' % (chConf['channel'], validChannelMax - 1))
+                        'Error: The DAQ device does not support channel %d input. Maximum is %d ' % (chConf['channel'], validChannelMax - 1))
+
+                self.chanList.append(chConf['channel'])
 
                 # Range
-                if chConf['range'].upper() not in _AI_RANGES:
-                    raise RuntimeError('Error: Invalid range %s' % chConf['range'])
+                if chConf['range'].upper() == 'BIP10VOLTS':
+                    self.gainList.append(ULRange.BIP10VOLTS)
+                if chConf['range'].upper() == 'BIP5VOLTS':
+                    self.gainList.append(ULRange.BIP5VOLTS)
+                if chConf['range'].upper() == 'UNI10VOLTS':
+                    self.gainList.append(ULRange.UNI10VOLTS)
+                if chConf['range'].upper() == 'UNI5VOLTS':
+                    self.gainList.append(ULRange.UNI5VOLTS)
 
-                uldaq.a_chan_input_mode(boardNum, chConf['channel'], inputMode)
-                chanList.append(chConf['channel'])
-                gainList.append(_AI_RANGES[chConf['range'].upper()])
 
             except RuntimeError as error:
                 print('\n', error)
 
         # Load configuration queue
-        uldaq.a_load_queue(boardNum, chanList, gainList, len(chanList))
-        self.chanList = chanList
-        self.gainList = gainList
+        uldaq.a_load_queue(self.device.boardNum, self.chanList, self.gainList, self.nChannels)
 
         # create buffer array (scaled data: 64 bits float)
-        self.__freeBuffer()
-        nPoints = self.nChannels * self.nSamplesPerChannel
-        self.memHandle = uldaq.scaled_win_buf_alloc(nPoints)
+        self.freeBuffer()
+        nPointsTotal = self.nChannels * self.nSamplesPerChannel
+        self.memHandle = uldaq.scaled_win_buf_alloc(nPointsTotal)
         if not self.memHandle:
             raise RuntimeError('Error: Failed to allocate memory for the analog input buffer')
 
         self.dataArray = ctypes.cast(self.memHandle, ctypes.POINTER(ctypes.c_double))
 
-        for i in range(nPoints):
+        for i in range(nPointsTotal):
             self.dataArray[i] = 0.0
 
         # this array shares memory with the buffer so we can read this instead as a numpy array
-        self.dataArrayNP = np.ctypeslib.as_array(self.dataArray, shape=(nPoints,)).reshape(self.nChannels, self.nSamplesPerChannel, order='F')
+        self.dataArrayNP = np.ctypeslib.as_array(self.dataArray, shape=(nPointsTotal,)).reshape(self.nChannels, self.nSamplesPerChannel, order='F')
 
         print('---- Analog input channel queue configuration ----')
         print('Scan options: ', self.__displayScanOptions(self.scanOptions))
@@ -188,8 +183,11 @@ class MCC1808_analogIn():
         # When using the queue, the low_channel and high_channel parameters are
         # ignored since they are specified in the queue.
         dummy = 0
-        self.actualRate = uldaq.a_in_scan(self.device.boardNum, dummy, dummy, self.nChannels * self.nSamplesPerChannel, int(self.sampleRate),
-                                       self.gainList[0], self.memHandle, int(self.scanOptions))
+        self.actualRate = uldaq.a_in_scan(board_num=self.device.boardNum, low_chan=dummy, high_chan=dummy,
+                                          num_points=self.nChannels * self.nSamplesPerChannel,
+                                          rate=int(self.sampleRate),
+                                          ul_range=self.gainList[0], memhandle=self.memHandle,
+                                          options=int(self.scanOptions))
 
         if flagWait:
             print('AI device data read - Please wait')
@@ -212,7 +210,12 @@ class MCC1808_analogIn():
         status, current_total_count, current_index = uldaq.get_status(self.device.boardNum, FunctionType.AIFUNCTION)
         current_scan_count = current_total_count // self.nChannels
 
-        return int(status == Status.RUNNING), current_scan_count, current_index, current_total_count
+        if True:
+            print('Collected samples (all channels) = ', current_total_count)
+            print('Collected samples per channel = ', current_scan_count)
+            print('current Buffer Idx = ', current_index, '\n')
+
+        return status, current_scan_count, current_index, current_total_count
 
     def stopRead(self):
         uldaq.stop_background(self.device.boardNum, FunctionType.AIFUNCTION)
@@ -224,6 +227,7 @@ class MCC1808_analogOut():
         self.device = self.getDevice()
 
         self.memHandle = None
+        self.nChannels = -1
 
     def getDevice(self):
         # Get the Analog Out device object and verify that it is valid.
@@ -241,6 +245,11 @@ class MCC1808_analogOut():
 
     def __displayScanOptions(self, bit_mask):
         return _displayScanOptions(bit_mask)
+
+    def freeBuffer(self):
+        if self.memHandle:
+            uldaq.win_buf_free(self.memHandle)
+            self.memHandle = None
 
     def confChannelScan(self, signals=np.array([0, 1, 2]), sampleRate=100, continuous=False, zeroEnd=True):
         """
@@ -288,12 +297,9 @@ class MCC1808_analogOut():
             print('\n', error)
 
         # create buffer array (scaled data: 64 bits float)
-        if self.memHandle:
-            uldaq.win_buf_free(self.memHandle)
-            self.memHandle = None
-
-        nPoints = self.nChannels * self.nSamplesPerChannel
-        self.memHandle = uldaq.scaled_win_buf_alloc(nPoints)
+        self.freeBuffer()
+        nPointsTotal = self.nChannels * self.nSamplesPerChannel
+        self.memHandle = uldaq.scaled_win_buf_alloc(nPointsTotal)
         if not self.memHandle:
             raise RuntimeError('Error: Failed to allocate memory for the analog output buffer')
 
@@ -315,8 +321,9 @@ class MCC1808_analogOut():
     def writeData(self, flagWait=False):
         # Start signal generation
 
-        self.actualRate = uldaq.a_out_scan(self.device.boardNum, 0, self.nChannels - 1, self.nChannels * self.nSamplesPerChannel, self.sampleRate,
-                                        self.range, self.memHandle, int(self.scanOptions))
+        self.actualRate = uldaq.a_out_scan(board_num=self.device.boardNum, low_chan=0, high_chan=self.nChannels - 1,
+                                           num_points=self.nChannels * self.nSamplesPerChannel, rate=int(self.sampleRate),
+                                           ul_range=self.range, memhandle=self.memHandle, options=int(self.scanOptions))
 
         if flagWait:
             print('AO device data write - Please wait')
@@ -381,7 +388,7 @@ class MCC1808_analogOut():
 
     def zeroOutput(self):
         for ch in range(self.nChannels):
-            uldaq.v_out(self.device.boardNum, ch, self.range, 0.0)
+            uldaq.v_out(board_num=self.device.boardNum, channel=ch, ul_range=self.range, data_value=0.0)
 
     def stopWrite(self):
         uldaq.stop_background(self.device.boardNum, FunctionType.AOFUNCTION)
@@ -400,8 +407,12 @@ class MCC1808_analogOut():
         status, current_total_count, current_index = uldaq.get_status(self.device.boardNum, FunctionType.AOFUNCTION)
         current_scan_count = current_total_count // self.nChannels
 
-        return int(status == Status.RUNNING), current_scan_count, current_index, current_total_count
+        if True:
+            print('Collected samples (all channels) = ', current_total_count)
+            print('Collected samples per channel = ', current_scan_count)
+            print('current Buffer Idx = ', current_index, '\n')
 
+        return status, current_scan_count, current_index, current_total_count
 
 class MCC1808():
     def __init__(self):
@@ -436,38 +447,31 @@ class MCC1808():
 
             # Create the DAQ device from the descriptor at the specified index.
             uldaq.create_daq_device(self.boardNum, devices[descriptor_index])
-            #daqDevice = _DaqDevice(self.boardNum, devices[descriptor_index])
-            #print(daqDevice.descriptor.product_name)
+            daqDevice = _DaqDevice(self.boardNum, devices[descriptor_index])
+            print(daqDevice.descriptor.product_name)
 
         except (RuntimeError, uldaq.ULError) as error:
             print('\n', error)
             exit()
 
-        return DaqDeviceInfo(self.boardNum)
+        return daqDevice
 
     def disconnect(self):
 
-        print('\nStopping', self.descriptor.dev_string, '- please wait...')
+        print('\nStopping', self.DAQdevice.descriptor.product_name, '- please wait...')
 
         # Stop the acquisition if it is still running.
-        if hasattr(self.AiDevice, 'nChannels') and self.AiDevice.getstatus()[0] == 1:
+        if self.AiDevice.getstatus()[0] == 1:
             print('Stopping AI Device data collection - please wait...')
             self.AiDevice.stopRead()
+        self.AiDevice.freeBuffer()
 
         # Stop the signal generation if it is still running.
-        if hasattr(self.AoDevice, 'nChannels') and self.AoDevice.getstatus()[0] == 1:
+        if self.AoDevice.getstatus()[0] == 1:
             print('Stopping AO Device data generation - please wait...')
             self.AoDevice.stopWrite()
-
-        for dev in (self.AiDevice, self.AoDevice):
-            if dev.memHandle:
-                uldaq.win_buf_free(dev.memHandle)
-                dev.memHandle = None
-
-        if self.DAQdevice.is_connected():
-            print('Disconnecting DAQ device - please wait...')
-            self.DAQdevice.disconnect()
+        self.AoDevice.freeBuffer()
 
         print('Releasing DAQ device - please wait...')
-        self.DAQdevice.release()
+        uldaq.release_daq_device(self.boardNum)
         print('Done!')

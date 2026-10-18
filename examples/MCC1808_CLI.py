@@ -8,7 +8,7 @@ if sys.version_info.major == 2:
     sys.stdout.write('Sorry! This program requires Python 3.x\n')
     sys.exit(1)
 
-acquisitionMode = 'normal' # valid options:  normal, signal_generator, simulate_from_file, mockup
+acquisitionMode = 'simulate_from_file' # valid options:  normal, signal_generator, simulate_from_file, mockup
 """
  - 'normal': Normal mode
    Used channels: Ain0, Ain1, Ain2, Ain3
@@ -41,7 +41,7 @@ if acquisitionMode.lower() == 'mockup':
     from caaos.acquisitionBoard.MCC1808_mockup import MCC1808
 else:
     if sys.platform.startswith('win'):
-        from caaos.acquisitionBoard.MCC1808_windows_x import MCC1808
+        from caaos.acquisitionBoard.MCC1808_windows import MCC1808
     elif sys.platform.startswith('linux'):
         from caaos.acquisitionBoard.MCC1808_linux import MCC1808
 
@@ -53,7 +53,10 @@ if acquisitionMode.lower() == 'signal_generator':
 myDAQ = MCC1808()
 
 if acquisitionMode.lower() == 'mockup':
-    inputEXPfile = '../../CAAosData/data/CG24HG.EXP'
+    if sys.platform.startswith('win'):
+        inputEXPfile = '../../CAAosData/data/CG24HG.EXP'
+    elif sys.platform.startswith('linux'):
+        inputEXPfile = '../../data/CG24HG.EXP'
     myDAQ.setInputEXPfile(inputEXPfile)
 
 # ------------------------------------------
@@ -80,7 +83,11 @@ myDAQ.AiDevice.confChannelQueue(AinConf, sampleRate, nSamples)
 
 if acquisitionMode.lower() == 'simulate_from_file':
     nChannels = 2
-    fileName = '/home/fernando/servidor/programas/00_UFABC/ProjetoPosDocAngela/data/CG24HG.EXP'
+    if sys.platform.startswith('win'):
+        fileName = '../../CAAosData/data/CG24HG.EXP'
+    elif sys.platform.startswith('linux'):
+        fileName = '/home/fernando/servidor/programas/00_UFABC/ProjetoPosDocAngela/data/CG24HG.EXP'
+
     data, sampleRate = myDAQ.AoDevice.loadDataFrom_EXP(fileName, channels=[0, 2])
     data = myDAQ.AoDevice.normalizeData(data, maxV=9.0)
     np.save('data_input.npy', data)
@@ -99,7 +106,7 @@ if acquisitionMode.lower() == 'signal_generator':
 
     if nChannels == 2:
         mysignalGenerator.sin(channelList=[0], amplitude=1.0, frequency=1.0, offset=0.0, phase_rad=0.0)
-        mysignalGenerator.sin(channelList=[1], amplitude=1.0, frequency=1.0, offset=0.0, phase_rad=0.0)
+        mysignalGenerator.sin(channelList=[1], amplitude=1.5, frequency=1.0, offset=0.0, phase_rad=0.0)
 
     data = mysignalGenerator.data
 
@@ -112,7 +119,9 @@ if acquisitionMode.lower() == 'signal_generator':
 
 # read data
 myDAQ.AiDevice.readData(flagWait=False)
-# time.sleep(2.0)  # in seconds
+#time.sleep(2.0)  # in seconds
+#Ai_currentScanSample = myDAQ.AiDevice.getstatus()
+
 # write data
 if acquisitionMode.lower() in ['signal_generator', 'simulate_from_file']:
     myDAQ.AoDevice.writeData(flagWait=False)
@@ -132,6 +141,11 @@ while myDAQ.AiDevice.getstatus()[0] == 1:  # or myDAQ.AoDevice.getstatus()[0] ==
 
 # acquired data
 data = myDAQ.AiDevice.dataArrayNP
+
+data[0]=data[0]+0.0
+data[1]=data[1]+0.2
+data[2]=data[2]+0.0
+data[3]=data[3]+0.2
 
 plt.plot(data.T)
 plt.grid()
