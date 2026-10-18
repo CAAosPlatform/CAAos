@@ -15,7 +15,7 @@ import time
 import numpy as np
 from mcculw import ul as uldaq
 from mcculw.device_info import DaqDeviceInfo
-from mcculw.enums import AnalogInputMode, FunctionType, InterfaceType, ScanOptions, Status, ULRange
+from mcculw.enums import AnalogInputMode, FunctionType, InterfaceType, ScanOptions, ULRange
 
 from caaos.tools import tools
 

@@ -6,11 +6,23 @@ import posixpath
 from pathlib import Path, PureWindowsPath
 import time
 import datetime
+import sys
 
 import numpy as np
 
 from caaos.conf import ARsetup
 
+def getOS():
+    if sys.platform.startswith('win'):
+        return 'win'
+    elif sys.platform.startswith('linux'):
+        return 'linux'
+
+def isWindows():
+    return getOS() == 'win'
+
+def isLinux():
+    return getOS() == 'linux'
 
 def is_number(s):
     try:

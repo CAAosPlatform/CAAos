@@ -108,9 +108,9 @@ class patientMonitoring(patientProcessing):
             print('WARNING: Using mockup acquisition board!')
             from caaos.acquisitionBoard.MCC1808_mockup import MCC1808
         else:
-            if sys.platform.startswith('win'):
-                from caaos.acquisitionBoard.MCC1808_windows_old import MCC1808
-            elif sys.platform.startswith('linux'):
+            if tools.isWindows():
+                from caaos.acquisitionBoard.MCC1808_windows import MCC1808
+            elif tools.isLinux():
                 from caaos.acquisitionBoard.MCC1808_linux import MCC1808
 
         # start collecting data
@@ -177,9 +177,9 @@ class patientMonitoring(patientProcessing):
 
         tools.ETaddElement(self.jobRootNode.xpath('data'), 'samplingRate_Hz', text=str(self.samplingRate_Hz))
 
-        if sys.platform.startswith('win'):
-            from caaos.acquisitionBoard.MCC1808_windows_old import MCC1808
-        elif sys.platform.startswith('linux'):
+        if tools.isWindows():
+            from caaos.acquisitionBoard.MCC1808_windows import MCC1808
+        elif tools.isLinux():
             from caaos.acquisitionBoard.MCC1808_linux import MCC1808
 
         # start collecting data
@@ -192,7 +192,10 @@ class patientMonitoring(patientProcessing):
         # ------------------------------------------
 
         nChannels = 2
-        data, sampleRate = self.myDAQ.AoDevice.loadDataFrom_EXP(dataFileName, channels=[0, 2])
+        #below:
+        # channel 2 (ABP) is sent to Aout0
+        # channel 0 (CBF_R) is sent to Aout1
+        data, sampleRate = self.myDAQ.AoDevice.loadDataFrom_EXP(dataFileName, channels=[2, 0])
 
         data = self.myDAQ.AoDevice.normalizeData(data, maxV=9.0)
         self.myDAQ.AoDevice.confChannelScan(signals=data, sampleRate=sampleRate, continuous=True, zeroEnd=True)
@@ -200,8 +203,8 @@ class patientMonitoring(patientProcessing):
         # ------------------------------------------
         # analog input configuration
         # ------------------------------------------
-
-        channels = [6, 7, 4, 5]  # Aout0 is connected to Ain6 and Ain7, Aout1 is connected to Ai4 and Ai5
+        # two first channels will show CBFv_R, the other two channels will show ABP
+        channels = [4, 5, 6, 7]  # Aout0 is connected to Ain6 and Ain7, Aout1 is connected to Ai4 and Ai5
 
         AinConf = [{'channel': channels[i], 'inputMode': 'SE', 'range': 'BIP10VOLTS'} for i in range(self.nChannels)]
         volt2velocity = 100 / 0.97  # (cm/s)/V  100cm/s=0,.97V. Dopplerbox manual, page 4-2

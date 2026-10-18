@@ -8,7 +8,12 @@ if sys.version_info.major == 2:
     sys.exit(1)
 
 patient = patientMonitoring.patientMonitoring()
-inputPath = '../../data/'  # do not forghet the last /
+
+if sys.platform.startswith('win'):
+    inputPath = '../../CAAosData/data/'
+elif sys.platform.startswith('linux'):
+    inputPath = '../../data/'
+
 outputPath = inputPath
 
 patient.newJob(outputFile=outputPath + 'temp_monitoring.exp')

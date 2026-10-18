@@ -18,12 +18,25 @@ acquisitionMode = 'simulate_from_file' # valid options:  normal, signal_generato
    Used channels: Ain4, Ain5, Ain6, Ain7
    Sinusoidal signals are generated in the analog output channels Aout0 and Aout1 and the analog input
    channels read these signals. This way we can check if the acquisition is working properly.
-   Aout0 is sent to Ain0 and Ain1 and Aout1 is sent to Ain2 and Ain3.  
+   Aout0 is sent to Ain6 and Ain7 and Aout1 is sent to Ain4 and Ain5.
+   
+   Ain4 = Aout1 (sinusoidal signal A)
+   Ain5 = Aout1 (sinusoidal signal A)
+   Ain6 = Aout0 (sinusoidal signal B)
+   Ain7 = Aout0 (sinusoidal signal B)
+   
  - 'simulate_from_file': Simulate from file mode
    Used channels: Ain4, Ain5, Ain6, Ain7
     Simulated data is read from a file and sent to the analog output channels Aout0 and Aout1 and the analog input
-   channels read these signals. This way we can check if the acquisition is working properly. 
-   Aout0 is sent to Ain0 and Ain1 and Aout1 is sent to Ain2 and Ain3.  
+   channels read these signals. This way we can check if the acquisition is working properly.
+   channel 0 of the file (usualy CBF_R) is sent to Aout1 and channel 2 (usualy ABP) is sent to Aout0.
+   Aout0 is sent to Ain6 and Ain7 and Aout1 is sent to Ain4 and Ain5.
+   
+   Ain4 = Aout1 (CBF_R) channel_0 of the file
+   Ain5 = Aout1 (CBF_R) channel_0 of the file
+   Ain6 = Aout0 (ABP) channel_2 of the file
+   Ain7 = Aout0 (ABP) channel_2 of the file
+   
  - 'mockup' mode:
     Used channels: Ain0, Ain1, Ain2, Ain3
     This mode uses the MCC1808_mockup.py module, which simulates the behavior of the MCC1808 board.
@@ -88,7 +101,7 @@ if acquisitionMode.lower() == 'simulate_from_file':
     elif sys.platform.startswith('linux'):
         fileName = '/home/fernando/servidor/programas/00_UFABC/ProjetoPosDocAngela/data/CG24HG.EXP'
 
-    data, sampleRate = myDAQ.AoDevice.loadDataFrom_EXP(fileName, channels=[0, 2])
+    data, sampleRate = myDAQ.AoDevice.loadDataFrom_EXP(fileName, channels=[2, 0])
     data = myDAQ.AoDevice.normalizeData(data, maxV=9.0)
     np.save('data_input.npy', data)
 
@@ -106,7 +119,7 @@ if acquisitionMode.lower() == 'signal_generator':
 
     if nChannels == 2:
         mysignalGenerator.sin(channelList=[0], amplitude=1.0, frequency=1.0, offset=0.0, phase_rad=0.0)
-        mysignalGenerator.sin(channelList=[1], amplitude=1.5, frequency=1.0, offset=0.0, phase_rad=0.0)
+        mysignalGenerator.sin(channelList=[1], amplitude=2.0, frequency=1.0, offset=0.0, phase_rad=0.0)
 
     data = mysignalGenerator.data
 
@@ -142,10 +155,11 @@ while myDAQ.AiDevice.getstatus()[0] == 1:  # or myDAQ.AoDevice.getstatus()[0] ==
 # acquired data
 data = myDAQ.AiDevice.dataArrayNP
 
-data[0]=data[0]+0.0
-data[1]=data[1]+0.2
-data[2]=data[2]+0.0
-data[3]=data[3]+0.2
+if False:
+    data[0]=data[0]+0.0
+    data[1]=data[1]+0.2
+    data[2]=data[2]+0.0
+    data[3]=data[3]+0.2
 
 plt.plot(data.T)
 plt.grid()

@@ -78,9 +78,10 @@ class ARmonitoring_GUI(QtWidgets.QWidget):
         self.totalTime_s = 10 * 60.0  # 10 minutes
         self.simulatePatient = False
         self.boardMockup = False
-        self.simulatePatientPath = '../../data/CG24HG.EXP'
-        self.simulatePatientPath = '../../DadosRicardoNogueira/monitoring_2025_11Nov_11_-_11_49_37_01_basal.EXP'
-        self.simulatePatientPath = '../../DadosRicardoNogueira/monitoring_2025_10Oct_21_-_14_09_24_02_hipercapnia.EXP'
+        if tools.isLinux():
+            self.simulatePatientPath = '../../data/CG24HG.EXP'
+        if tools.isWindows():
+            self.simulatePatientPath = '../../CAAosData/data/CG24HG.EXP'
         # length of the FIFO bufffer. this is the length of the data used for the calculations
         self.FIFOlength_s = 30.0
 
@@ -119,7 +120,10 @@ class ARmonitoring_GUI(QtWidgets.QWidget):
         self.birthdate = '31:01:1900'
         self.signalUpdateInterval_s = 5.0
         self.simulatePatient = False
-        self.simulatePatientPath = '../../data/CG24HG.EXP'
+        if tools.isLinux():
+            self.simulatePatientPath = '../../data/CG24HG.EXP'
+        if tools.isWindows():
+            self.simulatePatientPath = '../../CAAosData/data/CG24HG.EXP'
 
         self.closeJobAct.setEnabled(False)
 
@@ -152,7 +156,7 @@ class ARmonitoring_GUI(QtWidgets.QWidget):
 
         self.parent().setWindowTitle(self.parent().name + ' - ' + 'Monitoring')
 
-        if False:
+        if True:
             self.fileName, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Select output data file', '',
                                                                      'All (.exp .dat .csv .PAR) (*.EXP *.exp *.DAT *.dat *.csv *.CSV *.PAR *.par)')
         else:
