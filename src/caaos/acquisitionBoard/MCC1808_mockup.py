@@ -117,7 +117,7 @@ class MCC1808_analogIn():
             dtypes = ('U11', 'i4')  # col 0: time (11 char string)   col 1: frame (32 bit int)
             dtypes = dtypes + ('f8',) * nChannels  # the other columns will be treated as float (8bits)
 
-            rawData = np.genfromtxt(fileName, delimiter=None, skip_header=headerSize - 1, autostrip=True, names=','.join(signalLabels), dtype=dtypes)
+            rawData = np.genfromtxt(fileName, delimiter=None, skip_header=headerSize - 1, autostrip=True, names=','.join(signalLabels),  usecols=range(nChannels+2),dtype=dtypes)
 
             # remove first two columns of array (time stamp and sample #)
             names = list(rawData.dtype.names)[2:]
