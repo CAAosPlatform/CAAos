@@ -210,7 +210,7 @@ class MCC1808_analogIn():
         status, current_total_count, current_index = uldaq.get_status(self.device.boardNum, FunctionType.AIFUNCTION)
         current_scan_count = current_total_count // self.nChannels
 
-        if True:
+        if False:
             print('Collected samples (all channels) = ', current_total_count)
             print('Collected samples per channel = ', current_scan_count)
             print('current Buffer Idx = ', current_index, '\n')
@@ -356,8 +356,8 @@ class MCC1808_analogOut():
             dtypes = ('U11', 'i4')  # col 0: time (11 char string)   col 1: frame (32 bit int)
             dtypes = dtypes + ('f8',) * nChannels  # the other columns will be treated as float (8bits)
 
-            rawData = np.genfromtxt(fileName, delimiter=None, skip_header=headerSize - 1, autostrip=True, names=','
-                                                                                                                ''.join(signalLabels), usecols=range(nChannels+2), dtype=dtypes)
+            rawData = np.genfromtxt(fileName, delimiter=None, skip_header=headerSize - 1, autostrip=True,
+                                    names=','.join(signalLabels), usecols=range(nChannels+2), dtype=dtypes)
 
             # remove first two columns of array (time stamp and sample #)
             names = list(rawData.dtype.names)[2:]
@@ -408,7 +408,7 @@ class MCC1808_analogOut():
         status, current_total_count, current_index = uldaq.get_status(self.device.boardNum, FunctionType.AOFUNCTION)
         current_scan_count = current_total_count // self.nChannels
 
-        if True:
+        if False:
             print('Collected samples (all channels) = ', current_total_count)
             print('Collected samples per channel = ', current_scan_count)
             print('current Buffer Idx = ', current_index, '\n')

@@ -2,8 +2,9 @@
     <ARanalysis>
       <ARIARMA>
         <useB2B>True</useB2B>
-        <p>3</p>
-        <q>3</q>
+        <p>2</p>
+        <q>4</q>
+        <useRegularization>True</useRegularization>
       </ARIARMA>
     </ARanalysis>
   </operations>

@@ -12,6 +12,7 @@ from caaos.GUI.toolbox_ARanalysis.ARIARMA import ARIARMAWidget
 from caaos.GUI.toolbox_ARanalysis.Mx import MxWidget
 from caaos.GUI.toolbox_ARanalysis.TFA import powerSpectrumWidget
 from caaos.GUI.toolbox_ARanalysis.TFA import TFAWidget
+from caaos.GUI.toolbox_ARmonitoring.monitoringControl import monitoringControlWidget
 from caaos.GUI.toolbox_ARmonitoring.monitoringSetup import monitoringSetupWidget
 from caaos.GUI.toolbox_Preprocessing.artefactRemoval import artefactRemovalWidget
 from caaos.GUI.toolbox_Preprocessing.beat2beat import signalBeat2beatWidget
@@ -27,6 +28,7 @@ class ARmonitoring_GUI(QtWidgets.QWidget):
         QtWidgets.QWidget.__init__(self)
         self.statusBar = statusBar
         self.data = None
+        self.monitoringControl = None
         self.initUI()
 
     def initUI(self):
@@ -97,7 +99,7 @@ class ARmonitoring_GUI(QtWidgets.QWidget):
         self.monitoringSetup.signal_birthDate.connect(lambda: self.registerOptions('birthdate'))
         self.monitoringSetup.signal_samplingRate.connect(lambda: self.registerOptions('sampingRate'))
         self.monitoringSetup.signal_updateInterval.connect(lambda: self.registerOptions('updateInterval'))
-        self.monitoringSetup.signal_updateInterval.connect(lambda: self.registerOptions('totalTime'))
+        self.monitoringSetup.signal_totalTime.connect(lambda: self.registerOptions('totalTime'))
         self.monitoringSetup.signal_FIFOlength.connect(lambda: self.registerOptions('FIFOlength'))
         self.monitoringSetup.signal_startMonitoring.connect(self.startMonitoring)
 
@@ -108,6 +110,9 @@ class ARmonitoring_GUI(QtWidgets.QWidget):
         self.fileName = None
 
         self.update_timer.stop()
+        if self.monitoringControl is not None:
+            self.monitoringControl.close()
+            self.monitoringControl = None
         self.data.stopAcquisition()
         self.data = None
 
@@ -156,15 +161,19 @@ class ARmonitoring_GUI(QtWidgets.QWidget):
 
         self.parent().setWindowTitle(self.parent().name + ' - ' + 'Monitoring')
 
-        if True:
-            self.fileName, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Select output data file', '',
-                                                                     'All (.exp .dat .csv .PAR) (*.EXP *.exp *.DAT *.dat *.csv *.CSV *.PAR *.par)')
+        if self.boardMockup or self.simulatePatient:
+            dir,base,ext = tools.splitPath(self.simulatePatientPath)
+            self.fileName= dir + 'mockupBoard_dummyOutputData.EXP'
         else:
-            # output file
-            print('LOAD de arquivo abreviado! ver ARmonitoring_GUI.py, linha 146')
+            if True:
+                self.fileName, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Select output data file', '',
+                                                                         'All (.exp .dat .csv .PAR) (*.EXP *.exp *.DAT *.dat *.csv *.CSV *.PAR *.par)')
+            else:
+                # output file
+                print('LOAD de arquivo abreviado! ver ARmonitoring_GUI.py, linha 146')
 
-            self.fileName = ('/home/fernando/servidor/programas/00_UFABC/ProjetoPosDocAngela/data/monitoring_temp_%s_%s'
-                             '.EXP') % (tools.getCurrentTime(), self.patientName)
+                self.fileName = ('/home/fernando/servidor/programas/00_UFABC/ProjetoPosDocAngela/data/monitoring_temp_%s_%s'
+                                 '.EXP') % (tools.getCurrentTime(), self.patientName)
 
         if not self.fileName:
             return
@@ -193,7 +202,6 @@ class ARmonitoring_GUI(QtWidgets.QWidget):
         # with the first signal update, which is called in the next line, specially for ARI.
         #tools.timed_wait(30, update_interval=5)
 
-
         if False:
             time.sleep(15)
             self.data.updateSignals(applyOperations=True, saveToFile=True)
@@ -214,6 +222,10 @@ class ARmonitoring_GUI(QtWidgets.QWidget):
         self.update_timer.setSingleShot(False)
         self.update_timer.timeout.connect(self.updateTabs)
         self.update_timer.start()
+
+        self.monitoringControl = monitoringControlWidget(self.data)
+        self.monitoringControl.closeJobRequested.connect(self.closeJob)
+        self.monitoringControl.show()
 
         # self.reloadJobAct.setEnabled(True)
         # self.closeJobAct.setEnabled(True)
@@ -286,6 +298,10 @@ class ARmonitoring_GUI(QtWidgets.QWidget):
         self.vbox.addWidget(self.tabWidget)
 
     def updateTabs(self):
+        if (self.monitoringControl is not None and self.data.lastLoadedSample >= self.data.nSamplesTotal):
+            self.monitoringControl.close()
+            self.monitoringControl = None
+
         # update tabs with new information
 
         current = self.tabWidget.currentIndex()

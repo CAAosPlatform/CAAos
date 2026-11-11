@@ -71,6 +71,15 @@ class ARIARMAWidget(QtWidgets.QWidget):
 
         formLayout.addRow('order Q', orderQ_Widget)
 
+        # use regularization
+        default = True
+        self.useReg = default
+        useReg = QtWidgets.QCheckBox('', self)
+        useReg.setChecked(self.useReg)
+        useReg.stateChanged.connect(lambda: self.registerOptions('useReg'))
+
+        formLayout.addRow('Use regularization', useReg)
+
         # plot file format
         default = 0  # png
         self.plotFileFormat = plotFileFormatDict[default][0]
@@ -168,6 +177,8 @@ class ARIARMAWidget(QtWidgets.QWidget):
             self.orderP = self.sender().value()
         if typeOpt == 'orderQ':
             self.orderQ = self.sender().value()
+        if typeOpt == 'useReg':
+            self.useReg = self.sender().isChecked()
 
         if typeOpt == 'plotFileFormat':
             self.plotFileFormat = plotFileFormatDict[self.sender().currentIndex()][0]
@@ -176,7 +187,7 @@ class ARIARMAWidget(QtWidgets.QWidget):
 
     # synchronize signals
     def applyARIARMA(self):
-        self.data.computeARIARMA(useB2B=self.useB2B, orderP=self.orderP, orderQ=self.orderQ)
+        self.data.computeARIARMA(useB2B=self.useB2B, orderP=self.orderP, orderQ=self.orderQ,useReg=self.useReg)
         self.applyARIButton.clearFocus()
         self.saveButton.setEnabled(True)
 
@@ -254,7 +265,7 @@ class ARIARMAWidget(QtWidgets.QWidget):
             ARIARMA_data = self.data.ARIARMA_L
         if side.upper() == 'R':
             plotArea = self.plotARImonitoringR
-            ARIARMA_data = self.data.ARIARMA_L
+            ARIARMA_data = self.data.ARIARMA_R
 
         plotArea.setData(self.data.currentTime, ARIARMA_data.ARI_frac)
         plotArea.replot()

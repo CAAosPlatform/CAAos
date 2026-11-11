@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime, timedelta
 import sys
+import threading
 import numpy as np
 from lxml import etree as ETree
 from datetime import datetime
-
-flagSimulateAcquisition = False  # flag to simulate acquisition
 
 from caaos.acquisitionBoard.signalGenerator import signalGenerator
 from caaos.core.patientProcessing import patientProcessing
@@ -15,6 +14,8 @@ from caaos.tools.repeatedTimer import RepeatedTimer
 
 
 class patientMonitoring(patientProcessing):
+    ACTIVITY_CODES = {'START_ACTIVITY': 1, 'END_ACTIVITY': 2}
+    ACTIVITY_WORDS = {0: None, 1: 'HV start', 2: 'HV stop', -1: 'Unknown'}
 
     def __init__(self):
 
@@ -25,6 +26,13 @@ class patientMonitoring(patientProcessing):
         # self.signalUnits = ['cm/s', 'cm/s', 'mmHg', 'none']
         self.scheduleJob = None
         self.mockupAcquisition = False
+
+        # list of activity events, each event is a dictionary with keys: 'event', 'time_s', 'sample'
+        # it is used only to plot the events in the GUI, the actual activity codes are stored in self.activityCodes
+        self.activityEvents = []
+
+        #  threading.Lock() synchronization object to prevent race conditions.
+        self._activityLock = threading.Lock()
 
     def newJob(self, outputFile='./temp.exp'):
         """
@@ -91,9 +99,27 @@ class patientMonitoring(patientProcessing):
         """
 
         # set acquisition configuration
-        self.samplingRate_Hz = samplingRate_Hz
-        self.nSamplesTotal = int(totalTime_sec * self.samplingRate_Hz)
         self.mockupAcquisition = mockupAcquisition
+
+        if self.mockupAcquisition:
+            with open(mockupInputEXPfile, 'r') as file:
+                line = file.readline()
+                # extract sampling frequency in Hz
+                while not line.startswith('Sampling Rate'):
+                    line = file.readline()
+
+                self.samplingRate_Hz = float(line.split()[2].replace(',', '.').replace('Hz', ''))
+
+            # number of samples in the file
+            headerSize=6  # number of header lines in the EXP file
+            with open(mockupInputEXPfile, 'r') as f:
+                self.nSamplesTotal = sum(1 for line in f)-headerSize
+            patientName = 'dummy_file'
+            birthDate = '1:1:0001'
+        else:
+            self.samplingRate_Hz = samplingRate_Hz
+            self.nSamplesTotal = int(totalTime_sec * self.samplingRate_Hz)
+
 
         # labels and units will be changed by the PPO  file later
         self.signalLabels = ['Channel 1', 'Channel 2', 'Channel 3', 'Channel 4']
@@ -131,6 +157,9 @@ class patientMonitoring(patientProcessing):
         self.myDAQ.AiDevice.confChannelQueue(AinConf, self.samplingRate_Hz, self.nSamplesTotal)
 
         self.sampledData = self.myDAQ.AiDevice.dataArrayNP
+
+        #array that stores activity codes for each sample (0: none, 1:START_ACTIVITY, 2:END_ACTIVITY, -1: invalid entry)
+        self.activityCodes = np.zeros(self.nSamplesTotal, dtype=np.int8)
 
         # init signals with empty arrays
         for i in range(self.nChannels):
@@ -414,6 +443,11 @@ class patientMonitoring(patientProcessing):
                     file.write('%s\t%d' % (timeString, self.currentSampleNumber))
                     for ch in range(self.nChannels):
                         file.write('\t%f' % rawData[ch, i])
+                    with self._activityLock:
+                        code = self.activityCodes[(self.lastLoadedSample + i)]
+                    word = self.ACTIVITY_WORDS.get(code)
+                    if word is not None:
+                        file.write('\t' + word)
                     file.write('\n')
                     self.currentSampleNumber += 1
 
@@ -528,6 +562,31 @@ class patientMonitoring(patientProcessing):
 
         """
         return np.copy(self.myDAQ.AiDevice.dataArrayNP[:, startSample:endSample])
+
+    def registerActivityEvent(self, eventName):
+        """
+        Record an activity event (e.g. 'START ACTIVITY', 'END ACTIVITY').
+
+        Args:
+            eventName: name of the event.
+
+        Returns:
+            Elapsed time in seconds since self.startTime.
+        """
+        # index of the next sample to be acquired, taken from the acquisition board
+        sample = self.getCurrentSamplePerChannel()
+
+        elapsed_s = (datetime.now() - self.startTime).total_seconds()
+
+        if sample < self.nSamplesTotal:
+            with self._activityLock:
+                self.activityCodes[sample] = self.ACTIVITY_CODES.get(eventName, -1)  # default to -1 if eventName not found
+
+            self.activityEvents.append({'event': eventName, 'time_s': elapsed_s, 'sample': sample})
+            return elapsed_s
+        else:
+            print('WARNING: Cannot register activity event, sample index exceeds total samples.')
+            return None
 
     def getCurrentSamplePerChannel(self):
         """

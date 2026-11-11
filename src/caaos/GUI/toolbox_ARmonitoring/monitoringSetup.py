@@ -122,42 +122,42 @@ class monitoringSetupWidget(QtWidgets.QMainWindow):
         formLayout.addRow('Sampling rate (Hz)', self.samplingRateWidget)
 
         # patient name
-        patientNameWidget = QtWidgets.QLineEdit()
-        patientNameWidget.setText(self.patientName)
-        patientNameWidget.setFixedWidth(190)
-        patientNameWidget.editingFinished.connect(lambda: self.registerOptions('patientName'))
-        patientNameWidget.returnPressed.connect(lambda: self.registerOptions('patientName'))
-        # patientNameWidget.textChanged.connect(lambda: self.registerOptions('patName'))
-        formLayout.addRow('Patient Name', patientNameWidget)
+        self.patientNameWidget = QtWidgets.QLineEdit()
+        self.patientNameWidget.setText(self.patientName)
+        self.patientNameWidget.setFixedWidth(190)
+        self.patientNameWidget.editingFinished.connect(lambda: self.registerOptions('patientName'))
+        self.patientNameWidget.returnPressed.connect(lambda: self.registerOptions('patientName'))
+        # self.patientNameWidget.textChanged.connect(lambda: self.registerOptions('patName'))
+        formLayout.addRow('Patient Name', self.patientNameWidget)
 
         # patient birthdate
-        birthdateWidget = QtWidgets.QLineEdit()
-        birthdateWidget.setText(self.birthdate)
-        birthdateWidget.setFixedWidth(130)
-        birthdateWidget.editingFinished.connect(lambda: self.registerOptions('birthDate'))
-        birthdateWidget.returnPressed.connect(lambda: self.registerOptions('birthDate'))
-        # birthdateWidget.textChanged.connect(lambda: self.registerOptions('birthDate'))
-        formLayout.addRow('Birthdate', birthdateWidget)
+        self.birthdateWidget = QtWidgets.QLineEdit()
+        self.birthdateWidget.setText(self.birthdate)
+        self.birthdateWidget.setFixedWidth(130)
+        self.birthdateWidget.editingFinished.connect(lambda: self.registerOptions('birthDate'))
+        self.birthdateWidget.returnPressed.connect(lambda: self.registerOptions('birthDate'))
+        # self.birthdateWidget.textChanged.connect(lambda: self.registerOptions('birthDate'))
+        formLayout.addRow('Birthdate', self.birthdateWidget)
 
         # update interval (s)
-        samplingRateWidget = QtWidgets.QDoubleSpinBox()
-        samplingRateWidget.setRange(1, 600)
-        samplingRateWidget.setDecimals(2)
-        samplingRateWidget.setSingleStep(1)
-        samplingRateWidget.setFixedWidth(130)
-        samplingRateWidget.setValue(self.updateInterval_s)
-        samplingRateWidget.valueChanged.connect(lambda: self.registerOptions('updateInterval'))
-        formLayout.addRow('Signal update interval (s)', samplingRateWidget)
+        updateInterval = QtWidgets.QDoubleSpinBox()
+        updateInterval.setRange(1, 600)
+        updateInterval.setDecimals(2)
+        updateInterval.setSingleStep(1)
+        updateInterval.setFixedWidth(130)
+        updateInterval.setValue(self.updateInterval_s)
+        updateInterval.valueChanged.connect(lambda: self.registerOptions('updateInterval'))
+        formLayout.addRow('Signal update interval (s)', updateInterval)
 
         # total time (s)
-        totalTimeWidget = QtWidgets.QDoubleSpinBox()
-        totalTimeWidget.setRange(1, 60)
-        totalTimeWidget.setDecimals(2)
-        totalTimeWidget.setSingleStep(1)
-        totalTimeWidget.setFixedWidth(130)
-        totalTimeWidget.setValue(self.totalTime_s/60)  # convert to minutes for display
-        totalTimeWidget.valueChanged.connect(lambda: self.registerOptions('totalTime_s'))
-        formLayout.addRow('Total Acquisition time (min)', totalTimeWidget)
+        self.totalTimeWidget = QtWidgets.QDoubleSpinBox()
+        self.totalTimeWidget.setRange(1, 60)
+        self.totalTimeWidget.setDecimals(2)
+        self.totalTimeWidget.setSingleStep(1)
+        self.totalTimeWidget.setFixedWidth(130)
+        self.totalTimeWidget.setValue(self.totalTime_s/60)  # convert to minutes for display
+        self.totalTimeWidget.valueChanged.connect(lambda: self.registerOptions('totalTime_s'))
+        formLayout.addRow('Total Acquisition time (min)', self.totalTimeWidget)
 
         # FIFO register duration (s)
         FIFOlengthWidget = QtWidgets.QDoubleSpinBox()
@@ -213,6 +213,9 @@ class monitoringSetupWidget(QtWidgets.QMainWindow):
                 self.simulatePatientPathWidget.setEnabled(False)
                 self.browseFileButton.setEnabled(False)
                 self.samplingRateWidget.setEnabled(True)
+                self.patientNameWidget.setEnabled(True)
+                self.birthdateWidget.setEnabled(True)
+                self.totalTimeWidget.setEnabled(True)
             elif self.simulatePatientRadio.isChecked():
                 self.mode = 'simulate'
                 self.simulatePatient = True
@@ -220,6 +223,9 @@ class monitoringSetupWidget(QtWidgets.QMainWindow):
                 self.simulatePatientPathWidget.setEnabled(True)
                 self.browseFileButton.setEnabled(True)
                 self.samplingRateWidget.setEnabled(False)
+                self.patientNameWidget.setEnabled(False)
+                self.birthdateWidget.setEnabled(False)
+                self.totalTimeWidget.setEnabled(False)
                 self.signal_simulatePatient.emit()
             elif self.mockupBoardRadio.isChecked():
                 self.mode = 'mockup'
@@ -228,6 +234,9 @@ class monitoringSetupWidget(QtWidgets.QMainWindow):
                 self.simulatePatientPathWidget.setEnabled(True)
                 self.browseFileButton.setEnabled(True)
                 self.samplingRateWidget.setEnabled(False)
+                self.patientNameWidget.setEnabled(False)
+                self.birthdateWidget.setEnabled(False)
+                self.totalTimeWidget.setEnabled(False)
                 self.signal_boardMockup.emit()
 
         if type =='choosePatientPath':

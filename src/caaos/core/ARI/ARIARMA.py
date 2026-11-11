@@ -14,10 +14,14 @@ import copy
 from caaos.core.ARI import ARI
 
 class ARIARMAanalysis(ARI.ARIcore):
-    def __init__(self, X, Y, samplingFrequency_Hz, p=2, q=3, unitP=None, unitV=None):
+    def __init__(self, X, Y, samplingFrequency_Hz, p=2, q=3, regParam=None, refRegSolution=None,unitP=None,
+                 unitV=None):
         """
         runs autoregressive ARI analysis with exogenous input (ARX). Note: ARX is often called ARMA model (
         autoregressive moving average) in dCA literature.
+
+        if regParam=None, does not uses regularization
+        if refRegSolution=None, assumes refRegSolution =0 vector
 
         y: CBFv output
         x: ABP input
@@ -42,6 +46,9 @@ class ARIARMAanalysis(ARI.ARIcore):
         self.P = int(p)  # Ordem dos coeficientes AR (autoregressive).
         self.Q = int(q)  # Ordem dos coeficientes Ex (exogenous).
         self.Fs_Hz = samplingFrequency_Hz
+
+        self.regParam=regParam
+        self.refRegSolution=refRegSolution
 
         if True:
             #fig, axs = plt.subplots(2,1)
@@ -102,7 +109,21 @@ class ARIARMAanalysis(ARI.ARIcore):
         if np.linalg.cond(S)>1e4:
             print('The matrix is ill-conditioned. condition number: %f' % np.linalg.cond(S))
 
-        coefs, residual, rankS, singValS = np.linalg.lstsq(S, y_meas,rcond=None)
+        #Tikhonov regularization :   IE = ||Sx-y||^2 + alpha*||L(x-x^*)||^2
+        if self.regParam is not None:
+            # regularization matrix
+            L = np.eye(S.shape[1])
+            # regularization vector
+            if self.refRegSolution is not None:
+                b = self.refRegSolution
+            else:
+                b = np.zeros(L.shape[2])
+            # augmented system
+            S_augmented = np.vstack((S, np.sqrt(self.regParam) * L))
+            y_augmented = np.concatenate((y_meas, np.sqrt(self.regParam) * L @ b))
+            coefs, residual, rankS, singValS = np.linalg.lstsq(S_augmented, y_augmented,rcond=None)
+        else:
+            coefs, residual, rankS, singValS = np.linalg.lstsq(S, y_meas,rcond=None)
 
         self.coefsRaw=coefs
 
@@ -142,16 +163,17 @@ class ARIARMAanalysis(ARI.ARIcore):
 
             self.ltiSystem = scipy.signal.dlti(zeros, poles, gain, dt=1 / self.Fs_Hz)
 
-            if False:
-                t, y = scipy.signal.dimpulse(self.ltiSystem, n=len(self.X))
+        if False:
+            t, y = scipy.signal.dimpulse(self.ltiSystem, n=len(self.X))
 
-                fig0, ax0 = plt.subplots()
-                ax0.step(t, np.squeeze(y), '.-', where='post')
-                ax0.set_title("Impulse Response")
-                ax0.set(xlabel='Sample number', ylabel='Amplitude')
-                ax0.grid()
-                plt.show()
-                print('oi')
+            fig0, ax0 = plt.subplots()
+            ax0.step(t, np.squeeze(y), '.-', where='post')
+            ax0.set_title("Impulse Response")
+            ax0.set(xlabel='Sample number', ylabel='Amplitude')
+            ax0.grid()
+            plt.savefig('ImpulseResponse.png', dpi=300)
+            plt.show()
+            print('oi')
 
 
     def calcStepResponse(self):
@@ -162,11 +184,25 @@ class ARIARMAanalysis(ARI.ARIcore):
         t_out, y = scipy.signal.dlsim(self.ltiSystem, self.ABPstep, t=None, x0=None)
         y = np.squeeze(y)
         if False:
-            plt.plot(t_out, y)
-            plt.show()
+            fig0, ax0 = plt.subplots()
+            ax0.step(t_out, y, '.-b', where='post',label='step')
+            t_impulse, y_imp = scipy.signal.dimpulse(self.ltiSystem, n=len(self.X)-self.NsamplesBeforeImpuse)
+            y_imp=np.concatenate((0.0*np.ones(self.NsamplesBeforeImpuse), np.squeeze(y_imp)))
+            ax0.step(t_out, y_imp, '.-r', where='post',label='impulse')
+            ax0.legend()
+            ax0.set_title("Step Response")
+            ax0.set(xlabel='Sample number', ylabel='Amplitude')
+            ax0.grid()
+            plt.savefig('StepResponse.png', dpi=300)
+            plt.close()
+            print('oi')
         return y
 
-class ARIARMAanalysisRegularized(ARIARMAanalysis):
+class ARIARMAanalysisRegularized_legacy(ARIARMAanalysis):
+    ### DO NOT USE THIS CLASS!!!!
+    ### DO NOT USE THIS CLASS!!!!
+    ### DO NOT USE THIS CLASS!!!!
+    ### DO NOT USE THIS CLASS!!!!
     def __init__(self, X, Y, samplingFrequency_Hz, p=2, q=3, unitP=None, unitV=None, regParam=0.01,
                  referenceLTIvec=None):
 
@@ -262,14 +298,14 @@ class ARIARMAanalysisRegularized(ARIARMAanalysis):
 
             self.ltiSystem = scipy.signal.dlti(zeros, poles, gain, dt=1 / self.Fs_Hz)
 
-            if False:
-                t, y = scipy.signal.dimpulse(self.ltiSystem, n=len(self.X))
+        if False:
+            t, y = scipy.signal.dimpulse(self.ltiSystem, n=len(self.X))
 
-                fig0, ax0 = plt.subplots()
-                ax0.step(t, np.squeeze(y), '.-', where='post')
-                ax0.set_title("Impulse Response")
-                ax0.set(xlabel='Sample number', ylabel='Amplitude')
-                ax0.grid()
-                plt.show()
-                print('oi')
+            fig0, ax0 = plt.subplots()
+            ax0.step(t, np.squeeze(y), '.-', where='post')
+            ax0.set_title("Impulse Response")
+            ax0.set(xlabel='Sample number', ylabel='Amplitude')
+            ax0.grid()
+            plt.show()
+            print('oi')
 

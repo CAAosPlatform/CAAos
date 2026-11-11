@@ -15,7 +15,7 @@ from scipy import signal as scipySignal
 
 from caaos.tools import tools
 from caaos.core.ARI.ARI import ARIanalysis
-from caaos.core.ARI.ARIARMA import ARIARMAanalysis,ARIARMAanalysisRegularized
+from caaos.core.ARI.ARIARMA import ARIARMAanalysis
 from caaos.core.Mx.Mx import meanFlowIdx
 from caaos.core.signals.signals import signal
 from caaos.core.TFA.PSDestimator import PSDestimator
@@ -1020,8 +1020,10 @@ class patientProcessing():
                 useB2B = tools.getElemValueXpath(operation, xpath='useB2B', valType='bool')
                 p = tools.getElemValueXpath(operation, xpath='p', valType='int')
                 q = tools.getElemValueXpath(operation, xpath='q', valType='int')
+                useReg = tools.getElemValueXpath(operation, xpath='useRegularization', valType='bool')
                 print('ARIARMA:')
-                self.computeARIARMA(useB2B, p, q, register=False)
+                self.computeARIARMA(useB2B, orderP=p, orderQ=q, startTime_s=None, endTime_s=None, useReg=useReg,
+                                    register=False)
 
             if operation.tag == 'ARIARMAsave':
                 fileName = tools.getElemValueXpath(operation, xpath='fileName', valType='str')
@@ -1857,7 +1859,7 @@ class patientProcessing():
 
         print('Ok!')
 
-    def computeARIARMA(self, useB2B=True, orderP=2, orderQ=2, startTime_s=None, endTime_s=None,register=True):
+    def computeARIARMAold(self, useB2B=True, orderP=2, orderQ=2, startTime_s=None, endTime_s=None,register=True):
         """
         computes ARI index using ARX model
 
@@ -1953,7 +1955,7 @@ class patientProcessing():
             tools.ETaddElement(parent=xmlElement, tag='q', text=str(orderQ))
             self.ARoperationsNode.append(xmlElement)
 
-    def computeARIARMAregularized(self, useB2B=True, orderP=2, orderQ=2, startTime_s=None, endTime_s=None,
+    def computeARIARMA(self, useB2B=True, orderP=2, orderQ=2, startTime_s=None, endTime_s=None, useReg=False,
                                   register=True):
         """
         computes ARI index using ARX model
@@ -1964,6 +1966,7 @@ class patientProcessing():
             orderQ (int): exogenous order (input)
             startTime_s (): Time of the starting point in seconds. If None starts from 0 (default: None)
             endTime_s (): Time of the end point in seconds. If None starts from the end of the series (default: None)
+            useReg (bool): if True, use Tikhonov regularization. (default: None)
             register (bool):
 
         Returns:
@@ -2004,16 +2007,17 @@ class patientProcessing():
             inputSignal = inputSignal[startIdx:endIdx]
             outputSignal = outputSignal[startIdx:endIdx]
 
-            regParam=1000
-            if self.hasARIARMAdata_L:
+            if useReg and self.hasARIARMAdata_L:
+                regParam = 1000
                 previousEstimate = self.ARIARMA_L.coefsRaw
-                self.ARIARMA_L = ARIARMAanalysisRegularized(inputSignal, outputSignal, Fs, orderP, orderQ,
-                                                            self.signals[ABP_channel].unit,
-                                                            self.signals[CBFv_L_channel].unit,regParam=regParam,
-                                                            referenceLTIvec=previousEstimate)
             else:
-                self.ARIARMA_L = ARIARMAanalysis(inputSignal, outputSignal, Fs, orderP, orderQ, self.signals[ABP_channel].unit,
-                                                 self.signals[CBFv_L_channel].unit)
+                regParam = None
+                previousEstimate = None
+
+            self.ARIARMA_L = ARIARMAanalysis(inputSignal, outputSignal, Fs, orderP,
+                                          orderQ, regParam, previousEstimate,
+                                             self.signals[ABP_channel].unit, self.signals[CBFv_L_channel].unit)
+
 
             self.hasARIARMAdata_L = True
 
@@ -2043,15 +2047,18 @@ class patientProcessing():
             inputSignal = inputSignal[startIdx:endIdx]
             outputSignal = outputSignal[startIdx:endIdx]
 
-            if self.hasARIARMAdata_R:
+
+            if useReg and self.hasARIARMAdata_R:
+                regParam=1000
                 previousEstimate = self.ARIARMA_R.coefsRaw
-                self.ARIARMA_R = ARIARMAanalysisRegularized(inputSignal, outputSignal, Fs, orderP, orderQ,
-                                                            self.signals[ABP_channel].unit,
-                                                            self.signals[CBFv_R_channel].unit,regParam=regParam,
-                                                            referenceLTIvec=previousEstimate)
             else:
-                self.ARIARMA_R = ARIARMAanalysis(inputSignal, outputSignal, Fs, orderP, orderQ, self.signals[ABP_channel].unit,
-                                                 self.signals[CBFv_R_channel].unit)
+                regParam=None
+                previousEstimate=None
+
+            self.ARIARMA_R = ARIARMAanalysis(inputSignal, outputSignal, Fs, orderP, orderQ,
+                                                        regParam, previousEstimate,
+                                             self.signals[ABP_channel].unit,self.signals[CBFv_R_channel].unit)
+
 
             self.hasARIARMAdata_R = True
 
@@ -2063,6 +2070,7 @@ class patientProcessing():
             tools.ETaddElement(parent=xmlElement, tag='useB2B', text=str(useB2B))
             tools.ETaddElement(parent=xmlElement, tag='p', text=str(orderP))
             tools.ETaddElement(parent=xmlElement, tag='q', text=str(orderQ))
+            tools.ETaddElement(parent=xmlElement, tag='useRegularization', text=str(useReg))
             self.ARoperationsNode.append(xmlElement)
 
     def saveARIARMA(self, filePath, plotFileFormat=None, format='csv', register=True):
