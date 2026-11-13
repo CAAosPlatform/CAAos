@@ -86,9 +86,9 @@ for window_length_s in [ 30.0]: # value in seconds
                     fout = open(dir + baseName + '_ARIARMA.csv', 'w')
                     fout.write('time (s);ABP (mmHg);CBF_L (cm/s);CBF_R (cm/s);ARIARMA_L;ARIARMA_R;activity\n')
                     while timeEnd_s <= totalTime:
-
-                        patient.computeARIARMAregularized(useB2B=True, orderP=orderP, orderQ=orderQ, startTime_s=timeStart_s,
-                                               endTime_s=timeEnd_s, register=False)
+                        flagUseReg=True
+                        patient.computeARIARMAuseB2B=True, orderP=orderP, orderQ=orderQ, startTime_s=timeStart_s,
+                                               endTime_s=timeEnd_s, useReg=flagUseReg,register=False)
 
                         # set output time as the middle of the window
                         outputtime = (timeEnd_s+timeStart_s) / 2.0
